@@ -3,7 +3,8 @@ import sys
 
 pygame.init()
 
-screenWidth, screenHeight = 800, 600
+screenWidth = 800
+screenHeight = 600
 screen = pygame.display.set_mode((screenWidth, screenHeight))
 pygame.display.set_caption("Pygame Project")
 
@@ -96,23 +97,23 @@ def gameLoop():
     while True:
         screen.fill(black)
 
-        # Event handling
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
-
-
             if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_ESCAPE:
+                    pygame.quit()
+                    sys.exit()
                 if event.key == pygame.K_BACKSPACE:
                     playerInput = playerInput[:-1]
                 elif event.key == pygame.K_RETURN:
                     processInput(playerInput)
-                    playerInput = ""  # Clear input after processing
+                    playerInput = ""  # Clears input after processing
                 else:
                     playerInput += event.unicode
 
-        # Displays current room image
+        # Displays the image of the current room
         screen.blit(roomImages[currentRoom], (0, 0))
 
         # Displays character image if interacting with one
@@ -122,7 +123,7 @@ def gameLoop():
         # Displays current room description or character interaction text
         drawText(screen, outputText, (50, 50))
 
-        # Display player input
+        # Displays player input
         drawText(screen, "> " + playerInput, (50, 500))
 
         pygame.display.flip()
