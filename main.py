@@ -18,14 +18,14 @@ font = pygame.font.Font(None, 36)
 
 # This is a dictionary which when called loads an image
 roomImages = {
-    "start": pygame.image.load("assets/start_room.jpg"),
-    "hallway": pygame.image.load("assets/hallway.jpg"),
-    "bossRoom": pygame.image.load("assets/boss_room.jpg")
+    "start": pygame.image.load("assets/start_room.jpg").convert_alpha(),
+    "hallway": pygame.image.load("assets/hallway.jpg").convert_alpha(),
+    "bossRoom": pygame.image.load("assets/boss_room.jpg").convert_alpha()
 }
 
 # If we have characters then this is a separate dictionary which loads characters
 characterImages = {
-    "boss": pygame.image.load("assets/boss.png")
+    "boss": pygame.image.load("assets/boss.png").convert_alpha()
 }
 
 # This takes the images in those 2 dictionaries and scales them to fit the screen/size
@@ -89,45 +89,38 @@ def drawText(surface, text, pos):
         yOffset += textSurface.get_height() + 5
 
 
-# Main game loop
-def gameLoop():
-    global playerInput, outputText, currentCharacter
-    outputText = rooms[currentRoom]["description"]
+outputText = rooms[currentRoom]["description"]
 
-    while True:
-        screen.fill(black)
+while True:
+    screen.fill(black)
 
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            pygame.quit()
+            sys.exit()
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_ESCAPE:
                 pygame.quit()
                 sys.exit()
-            if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_ESCAPE:
-                    pygame.quit()
-                    sys.exit()
-                if event.key == pygame.K_BACKSPACE:
-                    playerInput = playerInput[:-1]
-                elif event.key == pygame.K_RETURN:
-                    processInput(playerInput)
-                    playerInput = ""  # Clears input after processing
-                else:
-                    playerInput += event.unicode
+            if event.key == pygame.K_BACKSPACE:
+                playerInput = playerInput[:-1]
+            elif event.key == pygame.K_RETURN:
+                processInput(playerInput)
+                playerInput = ""  # Clears input after processing
+            else:
+                playerInput += event.unicode
 
-        # Displays the image of the current room
-        screen.blit(roomImages[currentRoom], (0, 0))
+    # Displays the image of the current room
+    screen.blit(roomImages[currentRoom], (0, 0))
 
-        # Displays character image if interacting with one
-        if currentCharacter and currentCharacter in characterImages:
-            screen.blit(characterImages[currentCharacter], (500, 250))  # Puts a character at 500, 250
+    # Displays character image if interacting with one
+    if currentCharacter and currentCharacter in characterImages:
+        screen.blit(characterImages[currentCharacter], (500, 250))  # Puts a character at 500, 250
 
-        # Displays current room description or character interaction text
-        drawText(screen, outputText, (50, 50))
+    # Displays current room description or character interaction text
+    drawText(screen, outputText, (50, 50))
 
-        # Displays player input
-        drawText(screen, "> " + playerInput, (50, 500))
+    # Displays player input
+    drawText(screen, "> " + playerInput, (50, 500))
 
-        pygame.display.flip()
-
-
-if __name__ == "__main__":
-    gameLoop()
+    pygame.display.flip()
