@@ -36,10 +36,6 @@ class Player(pygame.sprite.Sprite):
         if self.direction.magnitude() != 0:
             self.direction = self.direction.normalize()
 
-            # Store original position in case we need to revert
-            original_x = self.hitbox.x
-            original_y = self.hitbox.y
-
             # Move horizontally
             self.hitbox.x += self.direction.x * speed
             self.rect.x = self.hitbox.x
@@ -52,24 +48,24 @@ class Player(pygame.sprite.Sprite):
 
     def collision(self, direction):
         MAX_ATTEMPTS = 10  # Safety limit to prevent infinite loops
-        player_mask = pygame.mask.from_surface(self.image)
+        playerMask = pygame.mask.from_surface(self.image)
 
         # Check for collision
-        collision_point = self.wallMask.overlap(player_mask, (self.rect.x, self.rect.y))
+        collisionPoint = self.wallMask.overlap(playerMask, (self.rect.x, self.rect.y))
 
-        if collision_point:
+        if collisionPoint:
             attempts = 0
             if direction == "horizontal":
                 if self.direction.x > 0:  # Moving right
                     # Move player to the left of the wall
-                    while (self.wallMask.overlap(player_mask, (self.rect.x, self.rect.y))
+                    while (self.wallMask.overlap(playerMask, (self.rect.x, self.rect.y))
                            and attempts < MAX_ATTEMPTS):
                         self.hitbox.x -= 1
                         self.rect.x -= 1
                         attempts += 1
                 elif self.direction.x < 0:  # Moving left
                     # Move player to the right of the wall
-                    while (self.wallMask.overlap(player_mask, (self.rect.x, self.rect.y))
+                    while (self.wallMask.overlap(playerMask, (self.rect.x, self.rect.y))
                            and attempts < MAX_ATTEMPTS):
                         self.hitbox.x += 1
                         self.rect.x += 1
@@ -78,14 +74,14 @@ class Player(pygame.sprite.Sprite):
             if direction == "vertical":
                 if self.direction.y > 0:  # Moving down
                     # Move player up
-                    while (self.wallMask.overlap(player_mask, (self.rect.x, self.rect.y))
+                    while (self.wallMask.overlap(playerMask, (self.rect.x, self.rect.y))
                            and attempts < MAX_ATTEMPTS):
                         self.hitbox.y -= 1
                         self.rect.y -= 1
                         attempts += 1
                 elif self.direction.y < 0:  # Moving up
                     # Move player down
-                    while (self.wallMask.overlap(player_mask, (self.rect.x, self.rect.y))
+                    while (self.wallMask.overlap(playerMask, (self.rect.x, self.rect.y))
                            and attempts < MAX_ATTEMPTS):
                         self.hitbox.y += 1
                         self.rect.y += 1

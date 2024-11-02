@@ -7,7 +7,7 @@ class Game:
     def __init__(self):
         pygame.init()
         self.screen = pygame.display.set_mode((WIDTH, HEIGTH))
-        pygame.display.set_caption('Tiled Test')
+        pygame.display.set_caption('1321 Project')
         self.clock = pygame.time.Clock()
         self.level = Level()
         pygame.mouse.set_visible(False)
@@ -32,7 +32,6 @@ class Game:
             self.level.run()
             pygame.display.update()
             self.clock.tick(FPS)
-
 
 if __name__ == '__main__':
     game = Game()

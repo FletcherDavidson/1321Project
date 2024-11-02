@@ -26,21 +26,28 @@ class Level:
                              self.visibleSprites.wallMask)
 
         # Create map and NPCs
-        self.createMap()
         self.createNpcs()
 
         # Debug font
         self.debugFont = pygame.font.Font(None, 36)
 
+    def checkDialogDistance(self):
+        #Check if player has moved too far from NPC during dialog
+        if self.dialogSystem.active and self.dialogSystem.currentNpc:
+            if not self.dialogSystem.currentNpc.canInteract(self.player, self.visibleSprites.offset):
+                self.dialogSystem.closeDialog()
+                print("Dialog closed: Player moved too far from NPC") # Debug info
+
     def processDialogChoice(self, choice):
         # Handle dialog choices here
         print(f"Processing dialog choice: {choice}")
-        # Add your dialog choice handling logic here
+        # Add dialog choice handling logic here
 
     def createNpcs(self):
         # Create NPCs closer to starting position for testing
         npc1 = NPC((1100, 1000), [self.visibleSprites, self.npcs], "Guard")
         npc2 = NPC((900, 1000), [self.visibleSprites, self.npcs], "Merchant")
+        npc3 = NPC((1500, 1000), [self.visibleSprites, self.npcs], "Lucius")
         print(f"Created NPCs. Total NPCs: {len(self.npcs)}")
 
     def checkNpcInteraction(self):
@@ -70,36 +77,14 @@ class Level:
         self.visibleSprites.customDraw(self.player)
         self.visibleSprites.update()
 
-        # Only check for NPC interactions if not in dialog
-        if not self.dialogSystem.active:
+        # Check distance from NPC if in dialog
+        if self.dialogSystem.active:
+            self.checkDialogDistance()
+        else:
             self.checkNpcInteraction()
 
         # Draw dialog on top of everything
         self.dialogSystem.draw(self.displaySurface)
-
-    def createMap(self):
-        layouts = {
-            'boundary': importCSVLayout('../map/crypt/CryptCSV_wall-1-2-3.csv'),
-            'plants': importCSVLayout('../map/1321Map_Plants.csv'),
-            'props': importCSVLayout('../map/1321Map_Props.csv'),
-        }
-        graphics = {
-            'grass': importFolder('../graphics/Grass'),
-            'objects': importFolder('../graphics/objects'),
-        }
-
-        for style, layout in layouts.items():
-            for rowIndex, row in enumerate(layout):
-                for colIndex, col in enumerate(row):
-                    if col != '-1':
-                        x = colIndex * TILESIZE
-                        y = rowIndex * TILESIZE
-                        if style == 'boundary':
-                            Tile((x, y), [self.obstacleSprites], 'invisible')
-                        if style == 'prop':
-                            surf = graphics['objects'][int(col)]
-                            Tile((x, y), [self.visibleSprites, self.obstacleSprites], 'object', surf)
-
 
 class YSortCameraGroup(pygame.sprite.Group):
     def __init__(self):
