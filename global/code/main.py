@@ -3,6 +3,8 @@ from constants import *
 from level import Level
 from dialog import *
 
+# Have any of y'all even pulled from the github or looked at this
+
 class Game:
     def __init__(self):
         pygame.init()

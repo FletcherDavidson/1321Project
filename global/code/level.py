@@ -45,8 +45,8 @@ class Level:
 
     def createNpcs(self):
         # Create NPCs closer to starting position for testing
-        npc1 = NPC((1100, 1000), [self.visibleSprites, self.npcs], "Guard")
-        npc2 = NPC((900, 1000), [self.visibleSprites, self.npcs], "Merchant")
+        npc1 = NPC((1100, 1000), [self.visibleSprites, self.npcs], "Artist")
+        npc2 = NPC((900, 1000), [self.visibleSprites, self.npcs], "Marcus")
         npc3 = NPC((1500, 1000), [self.visibleSprites, self.npcs], "Lucius")
         print(f"Created NPCs. Total NPCs: {len(self.npcs)}")
 

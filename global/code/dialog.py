@@ -13,6 +13,7 @@ class Dialog:
         self.selectedOption = 0
         self.currentNpc = None # Keep track of which NPC we're talking to
 
+
     def setDialog(self, options, response=""):
         self.active = True
         self.currentOptions = options
@@ -86,7 +87,6 @@ class Dialog:
                 self.closeDialog()
         return None
 
-
 class NPC(pygame.sprite.Sprite):
     def __init__(self, pos, groups, name):
         super().__init__(groups)
@@ -95,13 +95,14 @@ class NPC(pygame.sprite.Sprite):
         self.image.fill((255, 0, 0))  # Red color
         pygame.draw.circle(self.image, (255, 255, 255), (32, 32), 25)  # White circle for debugging
 
-        self.rect = self.image.get_rect(topleft=pos)
         self.name = name
+
+        self.dialogs = self.getNpcDialogs()
+        self.rect = self.image.get_rect(topleft=pos)
         self.interactionRadius = 150  # Increased radius for testing
 
         # Initialize dialog tree based on NPC type
         self.currentConversation = "greeting"  # Track current conversation state
-        self.dialogs = self.getNpcDialogs()
 
     def startDialog(self, dialogSystem):
         print(f"Starting dialog with {self.name}")
@@ -155,139 +156,192 @@ class NPC(pygame.sprite.Sprite):
         # Draw debug distance circle
         # pygame.draw.circle(surface, (255, 255, 0), screenPos, 5)  # Yellow dot at NPC center
 
+
+
+
+    # To add a new npc go to level and in createNpcs just copy one of the ones there change pos and name
+
     def getNpcDialogs(self):
-        #Return different dialog trees based on NPC type
-        if self.name == "Guard":
+        if self.name == "Lucius":
             return {
                 "greeting": {
                     "options": [
-                        "What are you guarding?",
-                        "Have you seen anything suspicious?",
+                        "I'm interested in your historical research",
+                        "I've heard you have an impressive collection",
                         "Goodbye"
                     ],
                     "responses": {
                         0: {
-                            "text": "I protect these ancient ruins. They hold many secrets.",
-                            "next": "guardDuty"
+                            "text": "Ah, a fellow scholar? It's rare to find others who appreciate the value of ancient knowledge.",
+                            "next": "research"
                         },
                         1: {
-                            "text": "There have been strange noises coming from below...",
-                            "next": "suspicious"
+                            "text": "Indeed, I've spent decades gathering texts and artifacts. Each piece tells its own story.",
+                            "next": "collection"
                         },
                         2: {
-                            "text": "Stay safe, traveler.",
-                            "next": None  # None means end conversation
-                        }
-                    }
-                },
-                "guardDuty": {
-                    "options": [
-                        "Tell me about these secrets",
-                        "How long have you been here?",
-                        "I'll let you get back to work"
-                    ],
-                    "responses": {
-                        0: {
-                            "text": "I'm sworn to secrecy, but legends speak of great power hidden within.",
-                            "next": "greeting"
-                        },
-                        1: {
-                            "text": "Been standing guard for 10 years now. Not much changes around here.",
-                            "next": "greeting"
-                        },
-                        2: {
-                            "text": "Farewell.",
+                            "text": "Farewell, seeker of knowledge.",
                             "next": None
                         }
                     }
                 },
-                "suspicious": {
+                "research": {
                     "options": [
-                        "What kind of noises?",
-                        "When did this start?",
-                        "I should investigate"
+                        "Tell me about your current studies",
+                        "I could help organize your research",
+                        "Let's discuss something else"
                     ],
                     "responses": {
                         0: {
-                            "text": "Like whispers and scratching. Gives me the creeps.",
-                            "next": "greeting"
+                            "text": "My current focus lies in ancient resistance movements. The strategies they employed were... fascinating.",
+                            "next": "strategies"
                         },
                         1: {
-                            "text": "Started about a week ago. Been getting worse each night.",
-                            "next": "greeting"
+                            "text": "Hmm... an intriguing offer. But I must be cautious with who accesses my more... sensitive materials.",
+                            "next": "trust"
                         },
                         2: {
-                            "text": "Be careful down there...",
+                            "text": "Very well. What would you like to discuss?",
+                            "next": "greeting"
+                        }
+                    }
+                },
+                "collection": {
+                    "options": [
+                        "Any particularly rare pieces?",
+                        "How do you protect your collection?",
+                        "Return to previous topics"
+                    ],
+                    "responses": {
+                        0: {
+                            "text": "There are some... unique texts. But I must be selective about what I share.",
+                            "next": "trust"
+                        },
+                        1: {
+                            "text": "In these times, one can't be too careful. The Empire has... particular interests in certain knowledge.",
+                            "next": "empire"
+                        },
+                        2: {
+                            "text": "What else would you like to know?",
+                            "next": "greeting"
+                        }
+                    }
+                },
+                "trust": {
+                    "options": [
+                        "I understand your caution",
+                        "I could share some of my own research",
+                        "Perhaps another time"
+                    ],
+                    "responses": {
+                        0: {
+                            "text": "Your patience is... refreshing. Perhaps in time, we could collaborate more closely.",
+                            "next": "research"
+                        },
+                        1: {
+                            "text": "Intriguing. What areas of study have captured your interest?",
+                            "next": "strategies"
+                        },
+                        2: {
+                            "text": "Yes, trust must be earned slowly in these dangerous times.",
+                            "next": None
+                        }
+                    }
+                },
+                "strategies": {
+                    "options": [
+                        "Tell me about resistance tactics",
+                        "What makes these strategies special?",
+                        "Let's return to safer topics"
+                    ],
+                    "responses": {
+                        0: {
+                            "text": "The ancients had... unique ways of opposing tyranny. Some texts speak of methods lost to time.",
+                            "next": "empire"
+                        },
+                        1: {
+                            "text": "Their brilliance lies in subtlety. Not mere force, but wisdom in knowing when and how to act.",
+                            "next": "collection"
+                        },
+                        2: {
+                            "text": "Perhaps that would be wise. The walls have ears, after all.",
+                            "next": "greeting"
+                        }
+                    }
+                },
+                "empire": {
+                    "options": [
+                        "You seem concerned about the Empire",
+                        "These texts must be protected",
+                        "I should go"
+                    ],
+                    "responses": {
+                        0: {
+                            "text": "One must be... diplomatic in expressing such concerns. But yes, their interest in ancient knowledge troubles me.",
+                            "next": "strategies"
+                        },
+                        1: {
+                            "text": "Indeed. Knowledge is power, and some powers are too dangerous in the wrong hands.",
+                            "next": "trust"
+                        },
+                        2: {
+                            "text": "Yes... perhaps you should. But return if you wish to discuss more... academic matters.",
                             "next": None
                         }
                     }
                 }
             }
-        elif self.name == "Merchant":
+
+        elif self.name == "Marcus":
             return {
                 "greeting": {
                     "options": [
-                        "What are you selling?",
-                        "Where do you get your goods?",
+                        "Lucius suggested I speak with you",
+                        "I hear you're knowledgeable about local politics",
                         "Goodbye"
                     ],
                     "responses": {
                         0: {
-                            "text": "Ah, a potential customer! I have potions, scrolls, and rare artifacts.",
-                            "next": "shop"
+                            "text": "Did he now? Lucius rarely sends visitors my way. You must have impressed him.",
+                            "next": "lucius"
                         },
                         1: {
-                            "text": "I travel far and wide to find the rarest items.",
-                            "next": "trading"
+                            "text": "The currents of power in Rome run deep. One must be careful in discussing such matters.",
+                            "next": "politics"
                         },
                         2: {
-                            "text": "Come back with more coins!",
-                            "next": None
-                        }
-                    }
-                },
-                "shop": {
-                    "options": [
-                        "Tell me about your potions",
-                        "Show me the artifacts",
-                        "Maybe later"
-                    ],
-                    "responses": {
-                        0: {
-                            "text": "My potions are too strong for you, traveler!",
-                            "next": "greeting"
-                        },
-                        1: {
-                            "text": "Each artifact has a story... and a hefty price tag!",
-                            "next": "greeting"
-                        },
-                        2: {
-                            "text": "Don't wait too long, these deals won't last!",
-                            "next": None
-                        }
-                    }
-                },
-                "trading": {
-                    "options": [
-                        "Any dangerous adventures?",
-                        "Found anything unusual lately?",
-                        "I'll let you get back to business"
-                    ],
-                    "responses": {
-                        0: {
-                            "text": "Lost my last caravan to a dragon! But the treasures were worth it.",
-                            "next": "greeting"
-                        },
-                        1: {
-                            "text": "Now that you mention it, I did find this strange amulet...",
-                            "next": "greeting"
-                        },
-                        2: {
-                            "text": "Safe travels, friend!",
+                            "text": "Safe travels, friend.",
                             "next": None
                         }
                     }
                 }
+                # Add more dialog options for Marcus...
             }
-        # Add more NPCs here with their dialog trees
+
+        elif self.name == "Artist":
+            return {
+                "greeting": {
+                    "options": [
+                        "I admire your work",
+                        "Do you know Lucius the historian?",
+                        "Farewell"
+                    ],
+                    "responses": {
+                        0: {
+                            "text": "You have an eye for art? Not many appreciate the deeper meanings in my work.",
+                            "next": "art"
+                        },
+                        1: {
+                            "text": "Ah, the reclusive scholar? Yes, he's commissioned several pieces from me.",
+                            "next": "lucius"
+                        },
+                        2: {
+                            "text": "May the muses guide your path.",
+                            "next": None
+                        }
+                    }
+                }
+                # Add more dialog options for Artist...
+            }
+
         return {}  # Default empty dialog for unknown NPCs
