@@ -26,10 +26,88 @@ class Level:
                              self.visibleSprites.wallMask)
 
         # Create map and NPCs
-        self.createNpcs()
+        # self.createNpcs()
 
         # Debug font
         self.debugFont = pygame.font.Font(None, 36)
+
+        self.currentMap = 'crypt'  # Starting map
+        self.mapData = {
+            'crypt': {
+                'floor': '../graphics/maps/CryptTest.png',
+                'walls': '../graphics/maps/CryptCollideables.png',
+                'props': '../graphics/maps/SolidProps.png',
+                'interactables': '../graphics/maps/Interactables.png',
+                'playerSpawn': (1000, 1000),
+                'connections': {
+                    # Define map connections and their trigger zones
+                    'town': {'zone': pygame.Rect(0, 500, 50, 200), 'spawn': (1900, 1000)},
+                }
+            },
+            'town': {
+                'floor': '../graphics/maps/TownTest.png',  # need to create these map assets
+                'walls': '../graphics/maps/TownCollideables.png',
+                'props': '../graphics/maps/TownProps.png',
+                'interactables': '../graphics/maps/TownInteractables.png',
+                'playerSpawn': (1900, 1000),
+                'connections': {
+                    'crypt': {'zone': pygame.Rect(1950, 500, 50, 200), 'spawn': (50, 1000)},
+                }
+            }
+        }
+
+        # Load initial map
+        self.loadMap(self.currentMap)
+
+    def loadMap(self, mapName):
+        """Load a new map and set up all necessary sprites and objects."""
+        # Clear existing sprites
+        self.visibleSprites.empty()
+        self.obstacleSprites.empty()
+        self.npcs.empty()
+
+        # Get map data
+        mapInfo = self.mapData[mapName]
+
+        # Update camera group with new map
+        self.visibleSprites.loadMapSurfaces(
+            mapInfo['floor'],
+            mapInfo['walls'],
+            mapInfo['props'],
+            mapInfo['interactables']
+        )
+
+        # Create player at spawn position
+        self.player = Player(mapInfo['playerSpawn'],
+                             [self.visibleSprites],
+                             self.obstacleSprites,
+                             self.visibleSprites.wallMask)
+
+        # Create NPCs specific to this map
+        self.createNpcs(mapName)
+
+        self.current_map = mapName
+
+    def checkMapTransitions(self):
+        # Check if player has entered a map transition zone.
+        currentConnections = self.mapData[self.currentMap]['connections']
+
+        for targetMap, connection in currentConnections.items():
+            # Adjust zone position based on camera offset
+            adjustedZone = connection['zone'].copy()
+            adjustedZone.x *= self.visibleSprites.scaleFactor
+            adjustedZone.y *= self.visibleSprites.scaleFactor
+
+            if self.player.hitbox.colliderect(adjustedZone):
+                self.transitionToMap(targetMap, connection['spawn'])
+                break
+
+    def transitionToMap(self, targetMap, spawnPosition):
+        # Handle the transition to a new map.
+        # could add transition effects here
+        self.loadMap(targetMap)
+        self.player.rect.topleft = spawnPosition
+        self.player.hitbox.topleft = spawnPosition
 
     def checkDialogDistance(self):
         #Check if player has moved too far from NPC during dialog
@@ -43,7 +121,7 @@ class Level:
         print(f"Processing dialog choice: {choice}")
         # Add dialog choice handling logic here
 
-    def createNpcs(self):
+    def createNpcs(self, mapName):
         # Create NPCs closer to starting position for testing
         npc1 = NPC((1100, 1000), [self.visibleSprites, self.npcs], "Artist")
         npc2 = NPC((900, 1000), [self.visibleSprites, self.npcs], "Marcus")
@@ -73,6 +151,8 @@ class Level:
                     npc.startDialog(self.dialogSystem)
 
     def run(self):
+        self.checkMapTransitions()
+
         # Update and draw the game
         self.visibleSprites.customDraw(self.player)
         self.visibleSprites.update()
@@ -86,6 +166,7 @@ class Level:
         # Draw dialog on top of everything
         self.dialogSystem.draw(self.displaySurface)
 
+
 class YSortCameraGroup(pygame.sprite.Group):
     def __init__(self):
         # General set up
@@ -95,38 +176,51 @@ class YSortCameraGroup(pygame.sprite.Group):
         self.halfHeight = self.displaySurface.get_size()[1] // 2
         self.offset = pygame.math.Vector2()
 
-        # Creating the ground
-        self.floorSurf = pygame.image.load('../graphics/maps/CryptTest.png').convert_alpha()
-        self.wallSurf = pygame.image.load('../graphics/maps/CryptCollideables.png').convert_alpha()
-        self.propSurf = pygame.image.load('../graphics/maps/SolidProps.png').convert_alpha()
-        self.interactableSurf = pygame.image.load('../graphics/maps/Interactables.png').convert_alpha()
-        self.floorRect = self.floorSurf.get_rect(topleft=(0, 0))
-        self.wallRect = self.wallSurf.get_rect(topleft=(0, 0))
-        self.propRect = self.propSurf.get_rect(topleft=(0, 0))
-        self.interactableRect = self.interactableSurf.get_rect(topleft=(0, 0))
-
-        # Scale by 2x, 3x, etc.
+        # Scale factor setup
         self.scaleFactor = 2
-        originalSize = self.floorSurf.get_size()
-        self.originalWidth = originalSize[0]  # Store original dimensions
-        self.originalHeight = originalSize[1]  # Store original dimensions
-        newSize = (originalSize[0] * self.scaleFactor, originalSize[1] * self.scaleFactor)
-        self.floorSurf = pygame.transform.scale(self.floorSurf, newSize)
-        self.floorRect = self.floorSurf.get_rect(topleft=(0, 0))
-        self.wallSurf = pygame.transform.scale(self.wallSurf, newSize)
-        self.wallRect = self.wallSurf.get_rect(topleft=(0, 0))
-        self.wallMask = pygame.mask.from_surface(self.wallSurf)
-        self.interactableSurf = pygame.transform.scale(self.interactableSurf, newSize)
-        self.interactableRect = self.interactableSurf.get_rect(topleft=(0, 0))
-        #self.interactableMask = pygame.mask.from_surface(self.interactableSurf)
-        #self.propSurf = pygame.transform.scale(self.propSurf, newSize)
-        #self.propRect = self.propSurf.get_rect(topleft=(0, 0))
-        #self.propMask = pygame.mask.from_surface(self.propSurf)
 
         # Store screen dimensions
         self.screen_width = self.displaySurface.get_width()
         self.screen_height = self.displaySurface.get_height()
 
+        # Initialize with default map
+        self.loadMapSurfaces(
+            floorPath='../graphics/maps/CryptTest.png',
+            wallsPath='../graphics/maps/CryptCollideables.png',
+            propsPath='../graphics/maps/SolidProps.png',
+            interactablesPath='../graphics/maps/Interactables.png'
+        )
+
+    def loadMapSurfaces(self, floorPath, wallsPath, propsPath, interactablesPath):
+        # Load and scale new map surfaces
+        # Load base surfaces
+        self.floorSurf = pygame.image.load(floorPath).convert_alpha()
+        self.wallSurf = pygame.image.load(wallsPath).convert_alpha()
+        self.propSurf = pygame.image.load(propsPath).convert_alpha()
+        self.interactableSurf = pygame.image.load(interactablesPath).convert_alpha()
+
+        # Get and store original dimensions
+        originalSize = self.floorSurf.get_size()
+        self.originalWidth = originalSize[0]
+        self.originalHeight = originalSize[1]
+        newSize = (originalSize[0] * self.scaleFactor, originalSize[1] * self.scaleFactor)
+
+        # Scale all surfaces
+        self.floorSurf = pygame.transform.scale(self.floorSurf, newSize)
+        self.wallSurf = pygame.transform.scale(self.wallSurf, newSize)
+        self.propSurf = pygame.transform.scale(self.propSurf, newSize)
+        self.interactableSurf = pygame.transform.scale(self.interactableSurf, newSize)
+
+        # Set up rects
+        self.floorRect = self.floorSurf.get_rect(topleft=(0, 0))
+        self.wallRect = self.wallSurf.get_rect(topleft=(0, 0))
+        self.propRect = self.propSurf.get_rect(topleft=(0, 0))
+        self.interactableRect = self.interactableSurf.get_rect(topleft=(0, 0))
+
+        # Create masks
+        self.wallMask = pygame.mask.from_surface(self.wallSurf)
+        # self.propMask = pygame.mask.from_surface(self.propSurf)  # Uncomment if needed
+        # self.interactableMask = pygame.mask.from_surface(self.interactableSurf)  # Uncomment if needed
 
     def customDraw(self, player):
         # Calculate the ideal camera position (centered on player)
@@ -135,19 +229,13 @@ class YSortCameraGroup(pygame.sprite.Group):
 
         # Calculate boundaries using original (unscaled) dimensions
         left_boundary = 0
-        right_boundary = self.originalWidth - (self.screen_width / self.scaleFactor) - TILESIZE * 14
+        right_boundary = (self.originalWidth * self.scaleFactor - self.screen_width * 2) - TILESIZE * 18
         top_boundary = 0
-        bottom_boundary = self.originalHeight - (self.screen_height / self.scaleFactor) - TILESIZE * 10.5
+        bottom_boundary = (self.originalHeight * self.scaleFactor - self.screen_height * 2) - TILESIZE * 21.5
 
         # Apply boundaries
-        if self.offset.x < left_boundary:
-            self.offset.x = left_boundary
-        if self.offset.x > right_boundary:
-            self.offset.x = right_boundary
-        if self.offset.y < top_boundary:
-            self.offset.y = top_boundary
-        if self.offset.y > bottom_boundary:
-            self.offset.y = bottom_boundary
+        self.offset.x = max(left_boundary, min(self.offset.x, right_boundary))
+        self.offset.y = max(top_boundary, min(self.offset.y, bottom_boundary))
 
         # Drawing the floor
         floorOffsetPos = self.floorRect.topleft - self.offset
