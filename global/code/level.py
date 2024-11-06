@@ -17,21 +17,32 @@ class Level:
         self.obstacleSprites = pygame.sprite.Group()
         self.npcs = pygame.sprite.Group()
 
-        # Initialize dialog system before creating the player
-        self.dialogSystem = Dialog()
-
-        # Create player after dialog system
-        self.player = Player((1000, 1000), [self.visibleSprites],
-                             self.obstacleSprites,
-                             self.visibleSprites.wallMask)
-
-        # Create map and NPCs
-        # self.createNpcs()
-
         # Debug font
         self.debugFont = pygame.font.Font(None, 36)
 
+        # Initialize dialog system
+        self.dialogSystem = Dialog()
+        self.dialogSystem.setLevelReference(self)
+
+        # Map management
         self.currentMap = 'crypt'  # Starting map
+
+        # Add transition state management
+        self.inTransition = False
+        self.transitionTimer = 0
+        self.transitionDuration = 500  # milliseconds
+        self.transitionAlpha = 0
+        self.fadeOut = True
+
+        # Create fade surface for transitions
+        self.fadeSurface = pygame.Surface((WIDTH, HEIGTH))
+        self.fadeSurface.fill((0, 0, 0))
+
+        # Create map and load initial map
+        self.createMapData()
+        self.loadMap(self.currentMap)
+
+    def createMapData(self):
         self.mapData = {
             'crypt': {
                 'floor': '../graphics/maps/CryptTest.png',
@@ -39,26 +50,75 @@ class Level:
                 'props': '../graphics/maps/SolidProps.png',
                 'playerSpawn': (1000, 1000),
                 'connections': {
-                    # Define map connections and their trigger zones
-                    'town': {'zone': pygame.Rect(0, 500, 50, 200), 'spawn': (1900, 1000)},
-                }
+                    'town': {
+                        'zone': pygame.Rect(0, 500, 50, 200),
+                        'spawn': (2750, 1060)
+                    }
+                },
+                'npcs': [
+                    {'type': 'Artist', 'pos': (1100, 1000)},
+                    {'type': 'Marcus', 'pos': (900, 1000)},
+                    {'type': 'Lucius', 'pos': (1500, 1000)},
+                    {'type': 'outside', 'pos': (1247, 173)}
+                ]
             },
             'town': {
-                'floor': '../graphics/maps/Outside/outsideMap.png',  # need to create these map assets
+                'floor': '../graphics/maps/Outside/outsideMap.png',
                 'walls': '../graphics/maps/Outside/outsideWalls.png',
                 'props': '../graphics/maps/Outside/outsideHouses.png',
-                'playerSpawn': (1000, 1000),
+                'playerSpawn': (2000, 1000),
                 'connections': {
-                    'crypt': {'zone': pygame.Rect(1950, 500, 50, 200), 'spawn': (50, 1000)},
-                }
+                    'crypt': {
+                        'zone': pygame.Rect(1950, 500, 50, 200),
+                        'spawn': (2000, 1000)
+                    }
+                },
+                'npcs': []
             }
         }
 
-        # Load initial map
-        self.loadMap(self.currentMap)
+    def startTransition(self, targetMap, spawnPosition):
+        # Initialize a fade transition to new map.
+        print(f"Starting transition to {targetMap}")
+        if not self.inTransition:
+            self.inTransition = True
+            self.transitionTimer = pygame.time.get_ticks()
+            self.fadeOut = True
+            self.targetMap = targetMap
+            self.targetSpawn = spawnPosition
+
+    def updateTransition(self):
+        # Update the transition effect.
+        if not self.inTransition:
+            return
+
+        currentTime = pygame.time.get_ticks()
+        elapsedTime = currentTime - self.transitionTimer
+
+        if self.fadeOut:
+            # Fading out
+            self.transitionAlpha = min(255, (elapsedTime / (self.transitionDuration / 2)) * 255)
+            if elapsedTime >= self.transitionDuration / 2:
+                # Switch maps at peak of fade out
+                self.loadMap(self.targetMap)
+                self.player.rect.topleft = self.targetSpawn
+                self.player.hitbox.topleft = self.targetSpawn
+                self.fadeOut = False
+                self.transitionTimer = currentTime
+        else:
+            # Fading in
+            self.transitionAlpha = max(0, 255 - (elapsedTime / (self.transitionDuration / 2)) * 255)
+            if elapsedTime >= self.transitionDuration / 2:
+                self.inTransition = False
+
+    def drawTransition(self):
+        #Draw the transition effect.
+        if self.inTransition:
+            self.fadeSurface.set_alpha(self.transitionAlpha)
+            self.displaySurface.blit(self.fadeSurface, (0, 0))
 
     def loadMap(self, mapName):
-        """Load a new map and set up all necessary sprites and objects."""
+        # Load a new map and set up all necessary sprites and objects.
         # Clear existing sprites
         self.visibleSprites.empty()
         self.obstacleSprites.empty()
@@ -119,13 +179,17 @@ class Level:
         # Add dialog choice handling logic here
 
     def createNpcs(self, mapName):
-        # Create NPCs closer to starting position for testing
-        npc1 = NPC((1100, 1000), [self.visibleSprites, self.npcs], "Artist")
-        npc2 = NPC((900, 1000), [self.visibleSprites, self.npcs], "Marcus")
-        npc3 = NPC((1500, 1000), [self.visibleSprites, self.npcs], "Lucius")
+        if mapName == "crypt":
+            # Create NPCs closer to starting position for testing
+            npc1 = NPC((1100, 1000), [self.visibleSprites, self.npcs], "Artist")
+            npc2 = NPC((900, 1000), [self.visibleSprites, self.npcs], "Marcus")
+            npc3 = NPC((1500, 1000), [self.visibleSprites, self.npcs], "Lucius")
 
-        npc4 = NPC((1250, 175), [self.visibleSprites, self.npcs], "outside")
-        print(f"Created NPCs. Total NPCs: {len(self.npcs)}")
+            npc4 = NPC((1220, 175), [self.visibleSprites, self.npcs], "outside")
+            print(f"Created NPCs. Total NPCs: {len(self.npcs)}") # Debug statement
+        elif mapName == "town":
+            # Add any town-specific NPCs here
+            print(f"Created Town NPCs. Total NPCs: {len(self.npcs)}") # Debug statement
 
     def checkNpcInteraction(self):
         keys = pygame.key.get_pressed()
@@ -150,20 +214,24 @@ class Level:
                     npc.startDialog(self.dialogSystem)
 
     def run(self):
-        self.checkMapTransitions()
+
+        # Update transition if active
+        if self.inTransition:
+            self.updateTransition()
 
         # Update and draw the game
         self.visibleSprites.customDraw(self.player)
         self.visibleSprites.update()
 
-        # Check distance from NPC if in dialog
+        # Handle dialog
         if self.dialogSystem.active:
             self.checkDialogDistance()
         else:
             self.checkNpcInteraction()
 
-        # Draw dialog on top of everything
+        # Draw dialog and transition effect
         self.dialogSystem.draw(self.displaySurface)
+        self.drawTransition()
 
 
 class YSortCameraGroup(pygame.sprite.Group):
@@ -179,8 +247,8 @@ class YSortCameraGroup(pygame.sprite.Group):
         self.scaleFactor = 2
 
         # Store screen dimensions
-        self.screen_width = self.displaySurface.get_width()
-        self.screen_height = self.displaySurface.get_height()
+        self.screenWidth = self.displaySurface.get_width()
+        self.screenHeight = self.displaySurface.get_height()
 
         # Initialize with default map
         self.loadMapSurfaces(
@@ -189,7 +257,13 @@ class YSortCameraGroup(pygame.sprite.Group):
             propsPath='../graphics/maps/SolidProps.png',
         )
 
+        # Track current map
+        self.currentMap = 'crypt'  # Default map
+
     def loadMapSurfaces(self, floorPath, wallsPath, propsPath):
+        # Update current map based on the path
+        self.currentMap = 'town' if 'outside' in floorPath.lower() else 'crypt'
+
         # Load and scale new map surfaces
         # Load base surfaces
         self.floorSurf = pygame.image.load(floorPath).convert_alpha()
@@ -221,15 +295,31 @@ class YSortCameraGroup(pygame.sprite.Group):
         self.offset.x = player.rect.centerx - self.halfWidth
         self.offset.y = player.rect.centery - self.halfHeight
 
-        # Calculate boundaries using original (unscaled) dimensions
-        left_boundary = 0
-        right_boundary = (self.originalWidth * self.scaleFactor - self.screen_width * 2) - TILESIZE * 18
-        top_boundary = 0
-        bottom_boundary = (self.originalHeight * self.scaleFactor - self.screen_height * 2) - TILESIZE * 21.5
+        # Set boundaries based on current map
+        if self.currentMap == 'town':
+            # Town/outside map boundaries
+            rightOffset = -8  # Adjust this value for town
+            bottomOffset = 17  # Adjust this value for town
+            topOffset = -445
+        else:  # crypt
+            # Crypt map boundaries
+            rightOffset = 18
+            bottomOffset = 21.5
+            topOffset = 0
+
+        # Calculate the ideal camera position (centered on player)
+        self.offset.x = player.rect.centerx - self.halfWidth
+        self.offset.y = player.rect.centery - self.halfHeight
+
+        # Calculate boundaries
+        leftBoundary = 0
+        rightBoundary = (self.originalWidth * self.scaleFactor - self.screenWidth * 2) - TILESIZE * rightOffset
+        topBoundary = 0 - topOffset
+        bottomBoundary = (self.originalHeight * self.scaleFactor - self.screenHeight * 2) - TILESIZE * bottomOffset
 
         # Apply boundaries
-        self.offset.x = max(left_boundary, min(self.offset.x, right_boundary))
-        self.offset.y = max(top_boundary, min(self.offset.y, bottom_boundary))
+        self.offset.x = max(leftBoundary, min(self.offset.x, rightBoundary))
+        self.offset.y = max(topBoundary, min(self.offset.y, bottomBoundary))
 
         # Drawing the floor
         floorOffsetPos = self.floorRect.topleft - self.offset

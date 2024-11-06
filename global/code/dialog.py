@@ -12,6 +12,11 @@ class Dialog:
         self.textColor = (255, 255, 255)
         self.selectedOption = 0
         self.currentNpc = None # Keep track of which NPC we're talking to
+        self.levelRef = None  # Reference to the Level instance
+
+    def setLevelReference(self, level):
+        self.levelRef = level
+
 
 
     def setDialog(self, options, response=""):
@@ -68,14 +73,21 @@ class Dialog:
             return None
 
         if event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_UP:
+            if event.key == pygame.K_e and self.currentNpc and self.currentNpc.isTransitionNPC:
+                # Handle transition NPC interaction
+                if self.levelRef:
+                    self.levelRef.startTransition('town', (50, 1000))
+                self.closeDialog()
+                return None
+
+            elif event.key == pygame.K_UP:
                 self.selectedOption = (self.selectedOption - 1) % len(self.currentOptions)
             elif event.key == pygame.K_DOWN:
                 self.selectedOption = (self.selectedOption + 1) % len(self.currentOptions)
             elif event.key == pygame.K_RETURN or event.key == pygame.K_e:
                 if self.currentNpc:
                     responseText, nextOptions = self.currentNpc.getResponse(self.selectedOption)
-                    if responseText is None:  # End dialog
+                    if responseText is None:
                         self.closeDialog()
                     else:
                         self.currentResponse = responseText
@@ -85,28 +97,37 @@ class Dialog:
                 return self.selectedOption
             elif event.key == pygame.K_ESCAPE:
                 self.closeDialog()
-        return None
+            return None
 
 class NPC(pygame.sprite.Sprite):
     def __init__(self, pos, groups, name):
         super().__init__(groups)
-        # Make NPC more visible
-        self.image = pygame.Surface((64, 64))  # Even bigger for testing
-        self.image.fill((255, 0, 0))  # Red color
-        pygame.draw.circle(self.image, (255, 255, 255), (32, 32), 25)  # White circle for debugging
+        self.image = pygame.Surface((64, 64))
+        self.image.fill((255, 0, 0))  # Red color for testing
+        # Make the NPC invisible if it's a transition NPC
+        if name == "outside":
+            self.image.set_alpha(0)  # Makes the NPC completely invisible
+        else:
+            pygame.draw.circle(self.image, (255, 255, 255), (32, 32), 25)
 
         self.name = name
-
         self.dialogs = self.getNpcDialogs()
         self.rect = self.image.get_rect(topleft=pos)
-        self.interactionRadius = 150  # Increased radius for testing
-
-        # Initialize dialog tree based on NPC type
-        self.currentConversation = "greeting"  # Track current conversation state
+        self.interactionRadius = 150
+        self.currentConversation = "greeting"
+        self.isTransitionNPC = name == "outside"  # Flag to identify transition NPCs
 
     def startDialog(self, dialogSystem):
         print(f"Starting dialog with {self.name}")
         dialogSystem.currentNpc = self
+
+        if self.isTransitionNPC:
+            # Trigger map transition directly
+            print("Triggering map transition to town")
+            if dialogSystem.levelRef:  # add this reference later
+                dialogSystem.levelRef.startTransition('town', (50, 1000))
+            return
+
         self.currentConversation = "greeting"
         currentDialog = self.dialogs.get(self.currentConversation, {})
         options = currentDialog.get("options", [])
@@ -149,7 +170,10 @@ class NPC(pygame.sprite.Sprite):
 
         # Draw interaction prompt
         font = pygame.font.Font(None, 36)
-        prompt = font.render(f"Press E to talk to {self.name}", True, (255, 255, 255))
+        if self.name == "outside":
+            prompt = font.render(f"Press E to enter the {self.name}", True, (255, 255, 255))
+        else:
+            prompt = font.render(f"Press E to talk to {self.name}", True, (255, 255, 255))
         promptRect = prompt.get_rect(centerx=screenPos[0], bottom=screenPos[1] - 20)
         surface.blit(prompt, promptRect)
 
@@ -341,7 +365,17 @@ class NPC(pygame.sprite.Sprite):
                 }
                 # Add more dialog options for Artist...
             }
-        #      elif self.name == "outside":
-            # self.transitionToMap("town", (1000, 1000))
-
+        elif self.name == "outside":
+            return {
+                "greeting": {
+                    "options": ["Enter the town"],
+                    "responses": {
+                        0: {
+                            "text": "Transitioning to town...",
+                            "next": None,
+                            "action": "transition_town"
+                        }
+                    }
+                }
+            }
         return {}  # Default empty dialog for unknown NPCs
