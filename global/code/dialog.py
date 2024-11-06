@@ -157,9 +157,7 @@ class NPC(pygame.sprite.Sprite):
         # pygame.draw.circle(surface, (255, 255, 0), screenPos, 5)  # Yellow dot at NPC center
 
 
-
-
-    # To add a new npc go to level and in createNpcs just copy one of the ones there change pos and name
+    # To add a new npc go to level and in create Npcs just copy one of the ones there change pos and name
 
     def getNpcDialogs(self):
         if self.name == "Lucius":
@@ -343,5 +341,7 @@ class NPC(pygame.sprite.Sprite):
                 }
                 # Add more dialog options for Artist...
             }
+        #      elif self.name == "outside":
+            # self.transitionToMap("town", (1000, 1000))
 
         return {}  # Default empty dialog for unknown NPCs

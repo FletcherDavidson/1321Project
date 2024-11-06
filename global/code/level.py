@@ -37,7 +37,6 @@ class Level:
                 'floor': '../graphics/maps/CryptTest.png',
                 'walls': '../graphics/maps/CryptCollideables.png',
                 'props': '../graphics/maps/SolidProps.png',
-                'interactables': '../graphics/maps/Interactables.png',
                 'playerSpawn': (1000, 1000),
                 'connections': {
                     # Define map connections and their trigger zones
@@ -45,11 +44,10 @@ class Level:
                 }
             },
             'town': {
-                'floor': '../graphics/maps/TownTest.png',  # need to create these map assets
-                'walls': '../graphics/maps/TownCollideables.png',
-                'props': '../graphics/maps/TownProps.png',
-                'interactables': '../graphics/maps/TownInteractables.png',
-                'playerSpawn': (1900, 1000),
+                'floor': '../graphics/maps/Outside/outsideMap.png',  # need to create these map assets
+                'walls': '../graphics/maps/Outside/outsideWalls.png',
+                'props': '../graphics/maps/Outside/outsideHouses.png',
+                'playerSpawn': (1000, 1000),
                 'connections': {
                     'crypt': {'zone': pygame.Rect(1950, 500, 50, 200), 'spawn': (50, 1000)},
                 }
@@ -74,7 +72,6 @@ class Level:
             mapInfo['floor'],
             mapInfo['walls'],
             mapInfo['props'],
-            mapInfo['interactables']
         )
 
         # Create player at spawn position
@@ -126,6 +123,8 @@ class Level:
         npc1 = NPC((1100, 1000), [self.visibleSprites, self.npcs], "Artist")
         npc2 = NPC((900, 1000), [self.visibleSprites, self.npcs], "Marcus")
         npc3 = NPC((1500, 1000), [self.visibleSprites, self.npcs], "Lucius")
+
+        npc4 = NPC((1250, 175), [self.visibleSprites, self.npcs], "outside")
         print(f"Created NPCs. Total NPCs: {len(self.npcs)}")
 
     def checkNpcInteraction(self):
@@ -188,16 +187,14 @@ class YSortCameraGroup(pygame.sprite.Group):
             floorPath='../graphics/maps/CryptTest.png',
             wallsPath='../graphics/maps/CryptCollideables.png',
             propsPath='../graphics/maps/SolidProps.png',
-            interactablesPath='../graphics/maps/Interactables.png'
         )
 
-    def loadMapSurfaces(self, floorPath, wallsPath, propsPath, interactablesPath):
+    def loadMapSurfaces(self, floorPath, wallsPath, propsPath):
         # Load and scale new map surfaces
         # Load base surfaces
         self.floorSurf = pygame.image.load(floorPath).convert_alpha()
         self.wallSurf = pygame.image.load(wallsPath).convert_alpha()
         self.propSurf = pygame.image.load(propsPath).convert_alpha()
-        self.interactableSurf = pygame.image.load(interactablesPath).convert_alpha()
 
         # Get and store original dimensions
         originalSize = self.floorSurf.get_size()
@@ -209,18 +206,15 @@ class YSortCameraGroup(pygame.sprite.Group):
         self.floorSurf = pygame.transform.scale(self.floorSurf, newSize)
         self.wallSurf = pygame.transform.scale(self.wallSurf, newSize)
         self.propSurf = pygame.transform.scale(self.propSurf, newSize)
-        self.interactableSurf = pygame.transform.scale(self.interactableSurf, newSize)
 
         # Set up rects
         self.floorRect = self.floorSurf.get_rect(topleft=(0, 0))
         self.wallRect = self.wallSurf.get_rect(topleft=(0, 0))
         self.propRect = self.propSurf.get_rect(topleft=(0, 0))
-        self.interactableRect = self.interactableSurf.get_rect(topleft=(0, 0))
 
         # Create masks
         self.wallMask = pygame.mask.from_surface(self.wallSurf)
         # self.propMask = pygame.mask.from_surface(self.propSurf)  # Uncomment if needed
-        # self.interactableMask = pygame.mask.from_surface(self.interactableSurf)  # Uncomment if needed
 
     def customDraw(self, player):
         # Calculate the ideal camera position (centered on player)
