@@ -198,16 +198,21 @@ class Level:
 
     def createNpcs(self, mapName):
         if mapName == "crypt":
-            # Create NPCs closer to starting position for testing
-            npc1 = NPC((1100, 1000), [self.visibleSprites, self.npcs], "Artist")
-            npc2 = NPC((900, 1000), [self.visibleSprites, self.npcs], "Marcus")
-            npc3 = NPC((1500, 1000), [self.visibleSprites, self.npcs], "Lucius")
+            luciusImage = pygame.image.load("../graphics/Characters/Sprite2.png"),
+            artistImage = pygame.image.load("../graphics/Characters/Sprite1.png"),
+            marcusImage = pygame.image.load("../graphics/Characters/Sprite3.png"),
+            # Add more NPC sprites as needed
 
-            npc4 = NPC((1220, 175), [self.visibleSprites, self.npcs], "outside")
+            # Create NPCs closer to starting position for testing
+            npc1 = NPC((1100, 1000), [self.visibleSprites, self.npcs], "Artist", artistImage)
+            npc2 = NPC((900, 1000), [self.visibleSprites, self.npcs], "Marcus", marcusImage)
+            npc3 = NPC((1500, 1000), [self.visibleSprites, self.npcs], "Lucius", luciusImage)
+
+            npc4 = NPC((1245, 215), [self.visibleSprites, self.npcs], "outside", None)
             print(f"Created NPCs. Total NPCs: {len(self.npcs)}") # Debug statement
         elif mapName == "town":
             # Add any town-specific NPCs here
-            npc5 = NPC((2650, 540), [self.visibleSprites, self.npcs], "crypt")
+            npc5 = NPC((2695, 580), [self.visibleSprites, self.npcs], "crypt", None)
             print(f"Created Town NPCs. Total NPCs: {len(self.npcs)}") # Debug statement
 
     def checkNpcInteraction(self):
@@ -348,5 +353,6 @@ class YSortCameraGroup(pygame.sprite.Group):
 
         # Drawing sprites
         for sprite in sorted(self.sprites(), key=lambda sprite: sprite.rect.centery):
-            offsetPos = sprite.rect.topleft - self.offset
-            self.displaySurface.blit(sprite.image, offsetPos)
+            if sprite.image is not None:
+                offsetPos = sprite.rect.topleft - self.offset
+                self.displaySurface.blit(sprite.image, offsetPos)

@@ -3,6 +3,7 @@ from level import *
 from player import *
 from soundManager import *
 
+
 class Dialog:
     def __init__(self):
         self.active = False # Whether the dialog system is active
@@ -174,20 +175,39 @@ class Dialog:
 
 
 class NPC(pygame.sprite.Sprite):
-    def __init__(self, pos, groups, name):
+    def __init__(self, pos, groups, name, spriteImage):
         super().__init__(groups)
-        self.image = pygame.Surface((64, 64))
-        self.image.fill((255, 0, 0))
-
-        # Make transition NPCs invisible
-        if name in ["outside", "crypt"]:
-            self.image.set_alpha(0)
+        # Set the image
+        if isinstance(spriteImage, tuple):
+            # If spriteImage is a tuple, we assume it's a list of images
+            self.images = [pygame.transform.scale(image, (image.get_width() * 3, image.get_height() * 3)) for image in
+                           spriteImage]
+            self.image = self.images[0]
+        elif spriteImage is None:
+            self.image = None
         else:
-            pygame.draw.circle(self.image, (255, 255, 255), (32, 32), 25)
+            # Scale a single image if it's not a tuple
+            self.image = pygame.transform.scale(spriteImage,
+                                                (spriteImage.get_width() * 3, spriteImage.get_height() * 3))
+
+        # Set the rect for the image
+        if self.image is None:
+            self.rect = pygame.Rect(pos[0], pos[1], 0, 0)
+        else:
+            self.rect = pygame.Rect(pos[0], pos[1], self.image.get_width(), self.image.get_height())
+
+        # Make transition NPCs invisible if the name is "outside" or "crypt" or if no image exists
+        if name in ["outside", "crypt"] or self.image is None:
+            if self.image is not None:
+                self.image.set_alpha(0)
+        else:
+            # Create a surface large enough to hold the image, assuming 64x64 is the base size
+            self.image = pygame.Surface((self.image.get_width(), self.image.get_height()), pygame.SRCALPHA)
+            self.image.blit(self.images[0], (0, 0))  # Blit the scaled image onto the new surface
 
         self.name = name
         self.dialogs = self.getNpcDialogs()
-        self.rect = self.image.get_rect(topleft=pos)
+        # self.rect = self.image.get_rect(topleft=pos)
         self.interactionRadius = 150
         self.currentConversation = "greeting"
         self.isTransitionNPC = name in ["outside", "crypt"]
@@ -248,7 +268,7 @@ class NPC(pygame.sprite.Sprite):
             prompt = font.render(f"Press E to enter the {self.name}", True, (255, 255, 255))
         else:
             prompt = font.render(f"Press E to talk to {self.name}", True, (255, 255, 255))
-        promptRect = prompt.get_rect(centerx=screenPos[0], bottom=screenPos[1] - 20)
+        promptRect = prompt.get_rect(centerx=screenPos[0], bottom=screenPos[1] - 45)
         surface.blit(prompt, promptRect)
 
         # Draw debug distance circle
