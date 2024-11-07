@@ -5,15 +5,15 @@ from soundManager import *
 
 class Dialog:
     def __init__(self):
-        self.active = False
-        self.currentOptions = []
-        self.currentResponse = ""
+        self.active = False # Whether the dialog system is active
+        self.currentOptions = [] # Options player can choose between
+        self.currentResponse = "" # NPC responses
         self.font = pygame.font.Font(None, 32)
         self.dialogBoxColor = (0, 0, 0)
         self.textColor = (255, 255, 255)
-        self.selectedOption = 0
+        self.selectedOption = 0 # What option player selects
         self.currentNpc = None
-        self.levelRef = None
+        self.levelRef = None # Reference to current level
 
         self.fullResponse = ""  # Stores the complete response text
         self.displayedChars = 0  # Number of characters currently displayed
@@ -23,6 +23,9 @@ class Dialog:
         self.showOptions = False  # Whether to show response options
 
         self.soundManager = SoundManager()
+
+        #self.dialogBox = pygame.image.load('../graphics/test/DialogBox4.png').convert_alpha()
+        #self.dialogBox = pygame.transform.scale(self.dialogBox, (1200, 300))
 
     def setLevelReference(self, level):
         self.levelRef = level
@@ -48,9 +51,8 @@ class Dialog:
         elapsed = currentTime - self.lastCharTime
         charsToAdd = int((elapsed / 1000.0) * self.charDisplaySpeed)
 
-        # if self.isTyping and charsToAdd >= 0:
+        # if self.isTyping and charsToAdd >= 0: # I couldn't find a good typing sound so I got rid of it I was going insane
             # self.soundManager.playSound('typing')
-
 
         if charsToAdd > 0:
             self.lastCharTime = currentTime
@@ -88,8 +90,11 @@ class Dialog:
         dialogHeight = 200
         dialogRect = pygame.Rect(50, surface.get_height() - dialogHeight - 50,
                                surface.get_width() - 100, dialogHeight)
+        #surface.blit(self.dialogBox, (dialogRect.x, dialogRect.y))
+
         pygame.draw.rect(surface, self.dialogBoxColor, dialogRect)
         pygame.draw.rect(surface, self.textColor, dialogRect, 2)
+
 
         # Draw the text with word wrap
         yOffset = 20
@@ -148,12 +153,13 @@ class Dialog:
                         if action == "transition_town":
                             self.closeDialog()
                             if self.levelRef:
-                                self.levelRef.startTransition('town', (2750, 1060))
+                                self.levelRef.startTransition('town', (2630, 650))
+                                # THIS IS THE ACTUAL VARIABLE THAT CONTROLS PLAYER POS WHEN SENDING TO TOWN
                             return None
                         elif action == "transition_crypt":
                             self.closeDialog()
                             if self.levelRef:
-                                self.levelRef.startTransition('crypt', (1000, 1000))
+                                self.levelRef.startTransition('crypt', (1214, 168))
                             return None
 
                         # Handle regular dialog

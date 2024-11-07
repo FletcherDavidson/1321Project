@@ -54,11 +54,11 @@ class Level:
                 'floor': '../graphics/maps/CryptTest.png',
                 'walls': '../graphics/maps/CryptCollideables.png',
                 'props': '../graphics/maps/SolidProps.png',
-                'playerSpawn': (1000, 1000),
+                'playerSpawn': (800, 1330),
                 'connections': {
                     'town': {
-                        'zone': pygame.Rect(0, 500, 50, 200),
-                        'spawn': (2750, 1060)
+                        'zone': pygame.Rect(0, 0, 0, 0), # Zone that sends player to town, not using currently
+                        'spawn': (2650, 600)
                     }
                 },
                 'npcs': [
@@ -69,13 +69,13 @@ class Level:
                 ]
             },
             'town': {
-                'floor': '../graphics/maps/Outside/outsideMap.png',
-                'walls': '../graphics/maps/Outside/outsideWalls.png',
+                'floor': '../graphics/maps/Outside/Map2.png',
+                'walls': '../graphics/maps/Outside/Map2Walls.png',
                 'props': '../graphics/maps/Outside/outsideHouses.png',
                 'playerSpawn': (4000, 1000),
                 'connections': {
                     'crypt': {
-                        'zone': pygame.Rect(1950, 500, 50, 200),
+                        'zone': pygame.Rect(0, 0, 0, 0), # Zone that sends player to crypt, not using currently
                         'spawn': (3000, 1000)
                     }
                 },
@@ -207,7 +207,7 @@ class Level:
             print(f"Created NPCs. Total NPCs: {len(self.npcs)}") # Debug statement
         elif mapName == "town":
             # Add any town-specific NPCs here
-            npc5 = NPC((2720, 950), [self.visibleSprites, self.npcs], "crypt")
+            npc5 = NPC((2650, 540), [self.visibleSprites, self.npcs], "crypt")
             print(f"Created Town NPCs. Total NPCs: {len(self.npcs)}") # Debug statement
 
     def checkNpcInteraction(self):
@@ -319,9 +319,9 @@ class YSortCameraGroup(pygame.sprite.Group):
         # Set boundaries based on current map
         if self.currentMap == 'town':
             # Town/outside map boundaries
-            rightOffset = -8  # Adjust this value for town
-            bottomOffset = 17  # Adjust this value for town
-            topOffset = -445
+            rightOffset = -40  # Adjust this value for town
+            bottomOffset = -25  # Adjust this value for town
+            topOffset = 0
         else:  # crypt
             # Crypt map boundaries
             rightOffset = 18
