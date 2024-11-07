@@ -1,6 +1,7 @@
 import pygame
 from level import *
 from player import *
+from soundManager import *
 
 class Dialog:
     def __init__(self):
@@ -11,30 +12,78 @@ class Dialog:
         self.dialogBoxColor = (0, 0, 0)
         self.textColor = (255, 255, 255)
         self.selectedOption = 0
-        self.currentNpc = None # Keep track of which NPC we're talking to
-        self.levelRef = None  # Reference to the Level instance
+        self.currentNpc = None
+        self.levelRef = None
+
+        self.fullResponse = ""  # Stores the complete response text
+        self.displayedChars = 0  # Number of characters currently displayed
+        self.charDisplaySpeed = 45  # Characters per second
+        self.lastCharTime = 0  # Last time a character was added
+        self.isTyping = False  # Whether text is currently being typed
+        self.showOptions = False  # Whether to show response options
+
+        self.soundManager = SoundManager()
 
     def setLevelReference(self, level):
         self.levelRef = level
-
-
+        self.soundManager = self.soundManager
 
     def setDialog(self, options, response=""):
         self.active = True
         self.currentOptions = options
-        self.currentResponse = response
+        self.fullResponse = response
+        self.currentResponse = ""
+        self.displayedChars = 0
         self.selectedOption = 0
+        self.isTyping = True
+        self.showOptions = False
+        self.lastCharTime = pygame.time.get_ticks()
+        self.soundManager.playSound('dialogOpen')
+
+    def updateTypewriter(self):
+        if not self.isTyping:
+            return
+
+        currentTime = pygame.time.get_ticks()
+        elapsed = currentTime - self.lastCharTime
+        charsToAdd = int((elapsed / 1000.0) * self.charDisplaySpeed)
+
+        # if self.isTyping and charsToAdd >= 0:
+            # self.soundManager.playSound('typing')
+
+
+        if charsToAdd > 0:
+            self.lastCharTime = currentTime
+            self.displayedChars += charsToAdd
+
+            if self.displayedChars >= len(self.fullResponse):
+                self.displayedChars = len(self.fullResponse)
+                self.isTyping = False
+                self.showOptions = True  # Show options when typing is complete
+
+            self.currentResponse = self.fullResponse[:self.displayedChars]
+
+            # Play typing sound
+            # if self.isTyping and charsToAdd > 0:
+            #     self.typingSound.play()
 
     def closeDialog(self):
         self.active = False
         self.currentNpc = None
         self.currentOptions = []
         self.currentResponse = ""
+        self.fullResponse = ""
         self.selectedOption = 0
+        self.isTyping = False
+        self.showOptions = False
+        self.soundManager.playSound('dialogClose')
 
     def draw(self, surface):
         if not self.active:
             return
+
+        # Update typewriter effect
+        self.updateTypewriter()
 
         dialogHeight = 200
         dialogRect = pygame.Rect(50, surface.get_height() - dialogHeight - 50,
@@ -42,6 +91,7 @@ class Dialog:
         pygame.draw.rect(surface, self.dialogBoxColor, dialogRect)
         pygame.draw.rect(surface, self.textColor, dialogRect, 2)
 
+        # Draw the text with word wrap
         yOffset = 20
         if self.currentResponse:
             words = self.currentResponse.split()
@@ -62,51 +112,70 @@ class Dialog:
                 surface.blit(responseSurf, (dialogRect.x + 20, dialogRect.y + yOffset))
                 yOffset += 30
 
-        optionStartY = dialogRect.y + dialogHeight - (len(self.currentOptions) * 40) - 20
-        for i, option in enumerate(self.currentOptions):
-            color = (255, 255, 0) if i == self.selectedOption else self.textColor
-            optionSurf = self.font.render(f"{i + 1}. {option}", True, color)
-            surface.blit(optionSurf, (dialogRect.x + 20, optionStartY + (i * 40)))
+        # Only draw options if typing is complete and showOptions is True
+        if self.showOptions:
+            optionStartY = dialogRect.y + dialogHeight - (len(self.currentOptions) * 40) - 20
+            for i, option in enumerate(self.currentOptions):
+                color = (255, 255, 0) if i == self.selectedOption else self.textColor
+                optionSurf = self.font.render(f"{i + 1}. {option}", True, color)
+                surface.blit(optionSurf, (dialogRect.x + 20, optionStartY + (i * 40)))
 
     def handleInput(self, event):
         if not self.active:
             return None
 
         if event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_e and self.currentNpc and self.currentNpc.isTransitionNPC:
-                # Handle transition NPC interaction
-                if self.levelRef:
-                    self.levelRef.startTransition('town', (50, 1000))
-                self.closeDialog()
+            # If still typing, allow skipping the typewriter effect
+            if self.isTyping and event.key in [pygame.K_RETURN, pygame.K_e, pygame.K_SPACE]:
+                self.displayedChars = len(self.fullResponse)
+                self.currentResponse = self.fullResponse
+                self.isTyping = False
+                self.showOptions = True
                 return None
 
-            elif event.key == pygame.K_UP:
-                self.selectedOption = (self.selectedOption - 1) % len(self.currentOptions)
-            elif event.key == pygame.K_DOWN:
-                self.selectedOption = (self.selectedOption + 1) % len(self.currentOptions)
-            elif event.key == pygame.K_RETURN or event.key == pygame.K_e:
-                if self.currentNpc:
-                    responseText, nextOptions = self.currentNpc.getResponse(self.selectedOption)
-                    if responseText is None:
-                        self.closeDialog()
-                    else:
-                        self.currentResponse = responseText
-                        if nextOptions:
-                            self.currentOptions = nextOptions
-                            self.selectedOption = 0
-                return self.selectedOption
-            elif event.key == pygame.K_ESCAPE:
-                self.closeDialog()
-            return None
+            # Only allow option selection if typing is complete
+            if not self.isTyping:
+                if event.key == pygame.K_UP:
+                    self.selectedOption = (self.selectedOption - 1) % len(self.currentOptions)
+                    self.soundManager.playSound('dialogSelect')
+                elif event.key == pygame.K_DOWN:
+                    self.selectedOption = (self.selectedOption + 1) % len(self.currentOptions)
+                    self.soundManager.playSound('dialogSelect')
+                elif event.key == pygame.K_RETURN or event.key == pygame.K_e:
+                    if self.currentNpc:
+                        responseText, nextOptions, action = self.currentNpc.getResponse(self.selectedOption)
+                        # Handle transitions
+                        if action == "transition_town":
+                            self.closeDialog()
+                            if self.levelRef:
+                                self.levelRef.startTransition('town', (2750, 1060))
+                            return None
+                        elif action == "transition_crypt":
+                            self.closeDialog()
+                            if self.levelRef:
+                                self.levelRef.startTransition('crypt', (1000, 1000))
+                            return None
+
+                        # Handle regular dialog
+                        if responseText is None:
+                            self.closeDialog()
+                        else:
+                            self.setDialog(nextOptions, responseText)
+                    return self.selectedOption
+                elif event.key == pygame.K_ESCAPE:
+                    self.closeDialog()
+        return None
+
 
 class NPC(pygame.sprite.Sprite):
     def __init__(self, pos, groups, name):
         super().__init__(groups)
         self.image = pygame.Surface((64, 64))
-        self.image.fill((255, 0, 0))  # Red color for testing
-        # Make the NPC invisible if it's a transition NPC
-        if name == "outside":
-            self.image.set_alpha(0)  # Makes the NPC completely invisible
+        self.image.fill((255, 0, 0))
+
+        # Make transition NPCs invisible
+        if name in ["outside", "crypt"]:
+            self.image.set_alpha(0)
         else:
             pygame.draw.circle(self.image, (255, 255, 255), (32, 32), 25)
 
@@ -115,18 +184,15 @@ class NPC(pygame.sprite.Sprite):
         self.rect = self.image.get_rect(topleft=pos)
         self.interactionRadius = 150
         self.currentConversation = "greeting"
-        self.isTransitionNPC = name == "outside"  # Flag to identify transition NPCs
+        self.isTransitionNPC = name in ["outside", "crypt"]
 
     def startDialog(self, dialogSystem):
         print(f"Starting dialog with {self.name}")
         dialogSystem.currentNpc = self
-
-        if self.isTransitionNPC:
-            # Trigger map transition directly
-            print("Triggering map transition to town")
-            if dialogSystem.levelRef:  # add this reference later
-                dialogSystem.levelRef.startTransition('town', (50, 1000))
-            return
+        self.currentConversation = "greeting"
+        currentDialog = self.dialogs.get(self.currentConversation, {})
+        options = currentDialog.get("options", [])
+        dialogSystem.setDialog(options)
 
         self.currentConversation = "greeting"
         currentDialog = self.dialogs.get(self.currentConversation, {})
@@ -139,16 +205,16 @@ class NPC(pygame.sprite.Sprite):
 
         responseText = responseData.get("text", "")
         nextState = responseData.get("next")
+        action = responseData.get("action", None)  # Get the action if it exists
 
         if nextState is None:
-            return None, None
+            return None, None, action
 
         self.currentConversation = nextState
         nextDialog = self.dialogs.get(nextState, {})
         nextOptions = nextDialog.get("options", [])
 
-        print(f"NPC {self.name} response: {responseText}, Next state: {nextState}")
-        return responseText, nextOptions
+        return responseText, nextOptions, action
 
 
     def canInteract(self, player, offset):
@@ -171,6 +237,8 @@ class NPC(pygame.sprite.Sprite):
         # Draw interaction prompt
         font = pygame.font.Font(None, 36)
         if self.name == "outside":
+            prompt = font.render(f"Press E to enter the {self.name}", True, (255, 255, 255))
+        elif self.name == "crypt":
             prompt = font.render(f"Press E to enter the {self.name}", True, (255, 255, 255))
         else:
             prompt = font.render(f"Press E to talk to {self.name}", True, (255, 255, 255))
@@ -374,6 +442,19 @@ class NPC(pygame.sprite.Sprite):
                             "text": "Transitioning to town...",
                             "next": None,
                             "action": "transition_town"
+                        }
+                    }
+                }
+            }
+        elif self.name == "crypt":
+            return {
+                "greeting": {
+                    "options": ["Enter the crypt"],
+                    "responses": {
+                        0: {
+                            "text": "Transitioning to crypt...",
+                            "next": None,
+                            "action": "transition_crypt"
                         }
                     }
                 }

@@ -4,17 +4,18 @@ from level import *
 
 
 class Player(pygame.sprite.Sprite):
-    def __init__(self, pos, groups, obstacleSprites, wallMask):
+    def __init__(self, pos, groups, obstacleSprites, wallMask, level):
         super().__init__(groups)
         self.image = pygame.image.load('../graphics/test/player.png').convert_alpha()
         self.rect = self.image.get_rect(topleft=pos)
-        self.hitbox = self.rect.inflate(0, -10)  # Shrinks hitbox vertically
+        self.hitbox = self.rect.inflate(0, 0)  # Shrinks hitbox vertically
         self.mask = pygame.mask.from_surface(self.image)
 
         self.direction = pygame.math.Vector2()
         self.speed = 10
         self.obstacleSprites = obstacleSprites
         self.wallMask = wallMask  # Pass the wall mask from the camera group
+        self.level = level
 
     def input(self):
         keys = pygame.key.get_pressed()
@@ -45,6 +46,7 @@ class Player(pygame.sprite.Sprite):
             self.hitbox.y += self.direction.y * speed
             self.rect.y = self.hitbox.y
             self.collision("vertical")
+        self.checkCameraBoundaries()
 
     def collision(self, direction):
         MAX_ATTEMPTS = 10  # Safety limit to prevent infinite loops
@@ -95,6 +97,28 @@ class Player(pygame.sprite.Sprite):
                 else:
                     self.hitbox.y -= self.direction.y * self.speed
                     self.rect.y = self.hitbox.y
+
+    def checkCameraBoundaries(self):
+        # Get the camera offset from the YSortCameraGroup
+        camera_offset = self.level.visibleSprites.offset
+
+        # Get the screen dimensions
+        screen_width = self.level.visibleSprites.screenWidth
+        screen_height = self.level.visibleSprites.screenHeight
+
+        # Get the original map dimensions
+        original_width = self.level.visibleSprites.originalWidth
+        original_height = self.level.visibleSprites.originalHeight
+
+        # Calculate the minimum and maximum positions based on the camera offset and screen dimensions
+        min_x = camera_offset.x
+        max_x = min_x + original_width - screen_width
+        min_y = camera_offset.y
+        max_y = min_y + original_height - screen_height
+
+        # Clamp the player's position within the boundaries
+        self.hitbox.clamp_ip(pygame.Rect(min_x, min_y, screen_width, screen_height))
+        self.rect.topleft = self.hitbox.topleft
 
     def update(self):
         self.input()

@@ -5,6 +5,7 @@ from player import Player
 from helpful import *
 from random import choice
 from dialog import Dialog, NPC
+from soundManager import *
 
 
 class Level:
@@ -30,7 +31,7 @@ class Level:
         # Add transition state management
         self.inTransition = False
         self.transitionTimer = 0
-        self.transitionDuration = 500  # milliseconds
+        self.transitionDuration = 4000  # milliseconds
         self.transitionAlpha = 0
         self.fadeOut = True
 
@@ -41,6 +42,11 @@ class Level:
         # Create map and load initial map
         self.createMapData()
         self.loadMap(self.currentMap)
+
+        # Initialize sound manager
+        self.soundManager = SoundManager()
+        # Start ambient sound for initial map
+        self.soundManager.startAmbient(self.currentMap)
 
     def createMapData(self):
         self.mapData = {
@@ -66,29 +72,34 @@ class Level:
                 'floor': '../graphics/maps/Outside/outsideMap.png',
                 'walls': '../graphics/maps/Outside/outsideWalls.png',
                 'props': '../graphics/maps/Outside/outsideHouses.png',
-                'playerSpawn': (2000, 1000),
+                'playerSpawn': (4000, 1000),
                 'connections': {
                     'crypt': {
                         'zone': pygame.Rect(1950, 500, 50, 200),
-                        'spawn': (2000, 1000)
+                        'spawn': (3000, 1000)
                     }
                 },
-                'npcs': []
+                'npcs': [
+                    {'type': 'crypt', 'pos': (1000, 1000)}
+                ]
             }
         }
 
     def startTransition(self, targetMap, spawnPosition):
-        # Initialize a fade transition to new map.
-        print(f"Starting transition to {targetMap}")
         if not self.inTransition:
+            print(f"Starting transition to {targetMap} with spawn position {spawnPosition}")
             self.inTransition = True
             self.transitionTimer = pygame.time.get_ticks()
             self.fadeOut = True
             self.targetMap = targetMap
             self.targetSpawn = spawnPosition
+            self.soundManager.playSound('transition')
+
+            # Close any active dialog
+            if self.dialogSystem.active:
+                self.dialogSystem.closeDialog()
 
     def updateTransition(self):
-        # Update the transition effect.
         if not self.inTransition:
             return
 
@@ -96,20 +107,20 @@ class Level:
         elapsedTime = currentTime - self.transitionTimer
 
         if self.fadeOut:
-            # Fading out
             self.transitionAlpha = min(255, (elapsedTime / (self.transitionDuration / 2)) * 255)
             if elapsedTime >= self.transitionDuration / 2:
-                # Switch maps at peak of fade out
+                self.currentMap = self.targetMap  # Update current map
                 self.loadMap(self.targetMap)
                 self.player.rect.topleft = self.targetSpawn
                 self.player.hitbox.topleft = self.targetSpawn
                 self.fadeOut = False
                 self.transitionTimer = currentTime
         else:
-            # Fading in
             self.transitionAlpha = max(0, 255 - (elapsedTime / (self.transitionDuration / 2)) * 255)
             if elapsedTime >= self.transitionDuration / 2:
                 self.inTransition = False
+                # Start new ambient sound
+                self.soundManager.startAmbient(self.currentMap)
 
     def drawTransition(self):
         #Draw the transition effect.
@@ -135,32 +146,39 @@ class Level:
         )
 
         # Create player at spawn position
-        self.player = Player(mapInfo['playerSpawn'],
-                             [self.visibleSprites],
-                             self.obstacleSprites,
-                             self.visibleSprites.wallMask)
-
+        self.player = Player(mapInfo['playerSpawn'],[self.visibleSprites],self.obstacleSprites, self.visibleSprites.wallMask, self)
+        '''
+        # Manually set the player's position
+        if mapName == 'town':
+            self.player.rect.topleft = (2000, 1000)  # Set spawn position here
+            self.player.hitbox.topleft = (2000, 1000)
+        elif mapName == 'crypt':
+            self.player.rect.topleft = (1000, 1000)  # Set spawn position here
+            self.player.hitbox.topleft = (1000, 1000)
+        '''
         # Create NPCs specific to this map
         self.createNpcs(mapName)
 
         self.current_map = mapName
 
     def checkMapTransitions(self):
-        # Check if player has entered a map transition zone.
+        if self.inTransition or self.dialogSystem.active:
+            return  # Don't check for transitions if we're already transitioning or in dialog
+
         currentConnections = self.mapData[self.currentMap]['connections']
 
         for targetMap, connection in currentConnections.items():
-            # Adjust zone position based on camera offset
             adjustedZone = connection['zone'].copy()
             adjustedZone.x *= self.visibleSprites.scaleFactor
             adjustedZone.y *= self.visibleSprites.scaleFactor
 
             if self.player.hitbox.colliderect(adjustedZone):
-                self.transitionToMap(targetMap, connection['spawn'])
-                break
+                self.startTransition(targetMap, connection['spawn'])
+                return  # Exit after starting transition
 
     def transitionToMap(self, targetMap, spawnPosition):
         # Handle the transition to a new map.
+        print(f"Transitioning to {targetMap} with spawn position {spawnPosition}")
         # could add transition effects here
         self.loadMap(targetMap)
         self.player.rect.topleft = spawnPosition
@@ -189,6 +207,7 @@ class Level:
             print(f"Created NPCs. Total NPCs: {len(self.npcs)}") # Debug statement
         elif mapName == "town":
             # Add any town-specific NPCs here
+            npc5 = NPC((2720, 950), [self.visibleSprites, self.npcs], "crypt")
             print(f"Created Town NPCs. Total NPCs: {len(self.npcs)}") # Debug statement
 
     def checkNpcInteraction(self):
@@ -214,6 +233,9 @@ class Level:
                     npc.startDialog(self.dialogSystem)
 
     def run(self):
+        # Check for map transitions first
+        if not self.dialogSystem.active:
+            self.checkMapTransitions()
 
         # Update transition if active
         if self.inTransition:
@@ -223,16 +245,15 @@ class Level:
         self.visibleSprites.customDraw(self.player)
         self.visibleSprites.update()
 
-        # Handle dialog
-        if self.dialogSystem.active:
-            self.checkDialogDistance()
-        else:
+        # Only check for NPC interaction if we're not transitioning or in dialog
+        if not self.inTransition and not self.dialogSystem.active:
             self.checkNpcInteraction()
+        elif self.dialogSystem.active:
+            self.checkDialogDistance()
 
         # Draw dialog and transition effect
         self.dialogSystem.draw(self.displaySurface)
         self.drawTransition()
-
 
 class YSortCameraGroup(pygame.sprite.Group):
     def __init__(self):
