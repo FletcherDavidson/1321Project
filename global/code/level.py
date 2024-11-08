@@ -1,6 +1,5 @@
 import pygame
 from constants import *
-from tile import Tile
 from player import Player
 from helpful import *
 from random import choice
@@ -48,42 +47,28 @@ class Level:
         # Start ambient sound for initial map
         self.soundManager.startAmbient(self.currentMap)
 
-    def createMapData(self):
-        self.mapData = {
-            'crypt': {
-                'floor': '../graphics/maps/CryptTest.png',
-                'walls': '../graphics/maps/CryptCollideables.png',
-                'props': '../graphics/maps/SolidProps.png',
-                'playerSpawn': (800, 1330),
-                'connections': {
-                    'town': {
-                        'zone': pygame.Rect(0, 0, 0, 0), # Zone that sends player to town, not using currently
-                        'spawn': (2650, 600)
-                    }
-                },
-                'npcs': [
-                    {'type': 'Artist', 'pos': (1100, 1000)},
-                    {'type': 'Marcus', 'pos': (900, 1000)},
-                    {'type': 'Lucius', 'pos': (1500, 1000)},
-                    {'type': 'outside', 'pos': (1247, 173)}
-                ]
-            },
-            'town': {
-                'floor': '../graphics/maps/Outside/Map2.png',
-                'walls': '../graphics/maps/Outside/Map2Walls.png',
-                'props': '../graphics/maps/Outside/outsideHouses.png',
-                'playerSpawn': (4000, 1000),
-                'connections': {
-                    'crypt': {
-                        'zone': pygame.Rect(0, 0, 0, 0), # Zone that sends player to crypt, not using currently
-                        'spawn': (3000, 1000)
-                    }
-                },
-                'npcs': [
-                    {'type': 'crypt', 'pos': (1000, 1000)}
-                ]
-            }
-        }
+    def run(self):
+        # Check for map transitions first
+        if not self.dialogSystem.active:
+            self.checkMapTransitions()
+
+        # Update transition if active
+        if self.inTransition:
+            self.updateTransition()
+
+        # Update and draw the game
+        self.visibleSprites.customDraw(self.player)
+        self.visibleSprites.update()
+
+        # Only check for NPC interaction if we're not transitioning or in dialog
+        if not self.inTransition and not self.dialogSystem.active:
+            self.checkNpcInteraction()
+        elif self.dialogSystem.active:
+            self.checkDialogDistance()
+
+        # Draw dialog and transition effect
+        self.dialogSystem.draw(self.displaySurface)
+        self.drawTransition()
 
     def startTransition(self, targetMap, spawnPosition):
         if not self.inTransition:
@@ -205,7 +190,7 @@ class Level:
 
             # Create NPCs closer to starting position for testing
             npc1 = NPC((1100, 1000), [self.visibleSprites, self.npcs], "Artist", artistImage)
-            npc2 = NPC((900, 1000), [self.visibleSprites, self.npcs], "Marcus", marcusImage)
+            npc2 = NPC((2000, 1000), [self.visibleSprites, self.npcs], "Marcus", marcusImage)
             npc3 = NPC((1500, 1000), [self.visibleSprites, self.npcs], "Lucius", luciusImage)
 
             npc4 = NPC((1245, 215), [self.visibleSprites, self.npcs], "outside", None)
@@ -237,28 +222,43 @@ class Level:
                 if keys[pygame.K_e]:
                     npc.startDialog(self.dialogSystem)
 
-    def run(self):
-        # Check for map transitions first
-        if not self.dialogSystem.active:
-            self.checkMapTransitions()
+    def createMapData(self):
+        self.mapData = {
+            'crypt': {
+                'floor': '../graphics/maps/CryptTest.png',
+                'walls': '../graphics/maps/CryptCollideables.png',
+                'props': '../graphics/maps/SolidProps.png',
+                'playerSpawn': (800, 1330),
+                'connections': {
+                    'town': {
+                        'zone': pygame.Rect(0, 0, 0, 0), # Zone that sends player to town, not using currently
+                        'spawn': (2650, 600)
+                    }
+                },
+                'npcs': [
+                    {'type': 'Artist', 'pos': (1100, 1000)},
+                    {'type': 'Marcus', 'pos': (900, 1000)},
+                    {'type': 'Lucius', 'pos': (1500, 1000)},
+                    {'type': 'outside', 'pos': (1247, 173)}
+                ]
+            },
+            'town': {
+                'floor': '../graphics/maps/Outside/Map2.png',
+                'walls': '../graphics/maps/Outside/Map2Walls.png',
+                'props': '../graphics/maps/Outside/outsideHouses.png',
+                'playerSpawn': (4000, 1000),
+                'connections': {
+                    'crypt': {
+                        'zone': pygame.Rect(0, 0, 0, 0), # Zone that sends player to crypt, not using currently
+                        'spawn': (3000, 1000)
+                    }
+                },
+                'npcs': [
+                    {'type': 'crypt', 'pos': (1000, 1000)}
+                ]
+            }
+        }
 
-        # Update transition if active
-        if self.inTransition:
-            self.updateTransition()
-
-        # Update and draw the game
-        self.visibleSprites.customDraw(self.player)
-        self.visibleSprites.update()
-
-        # Only check for NPC interaction if we're not transitioning or in dialog
-        if not self.inTransition and not self.dialogSystem.active:
-            self.checkNpcInteraction()
-        elif self.dialogSystem.active:
-            self.checkDialogDistance()
-
-        # Draw dialog and transition effect
-        self.dialogSystem.draw(self.displaySurface)
-        self.drawTransition()
 
 class YSortCameraGroup(pygame.sprite.Group):
     def __init__(self):
@@ -295,6 +295,8 @@ class YSortCameraGroup(pygame.sprite.Group):
         self.floorSurf = pygame.image.load(floorPath).convert_alpha()
         self.wallSurf = pygame.image.load(wallsPath).convert_alpha()
         self.propSurf = pygame.image.load(propsPath).convert_alpha()
+        self.roofSurf = pygame.image.load("../graphics/maps/Outside/Plants/HouseRoofs.png").convert_alpha()
+        self.ballisterSurf = pygame.image.load("../graphics/maps/CryptBallister.png").convert_alpha()
 
         # Get and store original dimensions
         originalSize = self.floorSurf.get_size()
@@ -306,11 +308,15 @@ class YSortCameraGroup(pygame.sprite.Group):
         self.floorSurf = pygame.transform.scale(self.floorSurf, newSize)
         self.wallSurf = pygame.transform.scale(self.wallSurf, newSize)
         self.propSurf = pygame.transform.scale(self.propSurf, newSize)
+        self.roofSurf = pygame.transform.scale(self.roofSurf, newSize)
+        self.ballisterSurf = pygame.transform.scale(self.ballisterSurf, newSize)
 
         # Set up rects
         self.floorRect = self.floorSurf.get_rect(topleft=(0, 0))
         self.wallRect = self.wallSurf.get_rect(topleft=(0, 0))
         self.propRect = self.propSurf.get_rect(topleft=(0, 0))
+        self.roofRect = self.roofSurf.get_rect(topleft=(0, 0))
+        self.ballisterRect = self.ballisterSurf.get_rect(topleft=(0, 0))
 
         # Create masks
         self.wallMask = pygame.mask.from_surface(self.wallSurf)
@@ -356,3 +362,12 @@ class YSortCameraGroup(pygame.sprite.Group):
             if sprite.image is not None:
                 offsetPos = sprite.rect.topleft - self.offset
                 self.displaySurface.blit(sprite.image, offsetPos)
+
+        if self.currentMap == "town":
+            if player.rect.centery <= self.roofRect.centery:
+                self.displaySurface.blit(self.roofSurf, floorOffsetPos)
+        #elif self.currentMap == "crypt":
+            #if player.rect.centery <= self.ballisterRect.centery:
+                #self.displaySurface.blit(self.ballisterSurf, ballisterOffsetPos)
+
+

@@ -242,7 +242,6 @@ class NPC(pygame.sprite.Sprite):
 
         return responseText, nextOptions, action
 
-
     def canInteract(self, player, offset):
         # Adjust coordinates for camera offset
         screenPos = pygame.math.Vector2(self.rect.center) - offset
@@ -273,7 +272,6 @@ class NPC(pygame.sprite.Sprite):
 
         # Draw debug distance circle
         # pygame.draw.circle(surface, (255, 255, 0), screenPos, 5)  # Yellow dot at NPC center
-
 
     # To add a new npc go to level and in create Npcs just copy one of the ones there change pos and name
 

@@ -12,7 +12,7 @@ class Player(pygame.sprite.Sprite):
         self.mask = pygame.mask.from_surface(self.image)
 
         self.direction = pygame.math.Vector2()
-        self.speed = 10
+        self.speed = 12
         self.obstacleSprites = obstacleSprites
         self.wallMask = wallMask  # Pass the wall mask from the camera group
         self.level = level

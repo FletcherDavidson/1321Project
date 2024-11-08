@@ -3,7 +3,6 @@ from constants import *
 from level import Level
 from dialog import *
 
-
 class Game:
     def __init__(self):
         pygame.init()

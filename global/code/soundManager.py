@@ -25,7 +25,7 @@ class SoundManager:
         # Set default volumes
         self.volumes = {
             'sfx': 0.7,
-            'ambient': 0.7,
+            'ambient': 0.9,
             # 'typing': 0.7  # Typing sound should be quieter
         }
 
