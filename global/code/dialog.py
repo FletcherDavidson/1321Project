@@ -483,4 +483,17 @@ class NPC(pygame.sprite.Sprite):
                     }
                 }
             }
+        elif self.name == "dude":
+            return {
+                "greeting": {
+                    "options": ["Guy standing outside house in town"],
+                    "responses": {
+                        0: {
+                            "text": "",
+                            "next": None,
+                            "action": None
+                        }
+                    }
+                }
+            }
         return {}  # Default empty dialog for unknown NPCs

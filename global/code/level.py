@@ -198,6 +198,7 @@ class Level:
         elif mapName == "town":
             # Add any town-specific NPCs here
             npc5 = NPC((2695, 580), [self.visibleSprites, self.npcs], "crypt", None)
+            npc6 = NPC((1462, 530), [self.visibleSprites, self.npcs], "dude", None)
             print(f"Created Town NPCs. Total NPCs: {len(self.npcs)}") # Debug statement
 
     def checkNpcInteraction(self):
