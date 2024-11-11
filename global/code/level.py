@@ -1,4 +1,6 @@
 import pygame
+import math
+import random
 from constants import *
 from player import Player
 from helpful import *
@@ -7,8 +9,11 @@ from dialog import Dialog, NPC
 from soundManager import *
 
 
+
 class Level:
     def __init__(self):
+        self.dialog = Dialog()
+
         # Get the display surface
         self.displaySurface = pygame.display.get_surface()
 
@@ -34,6 +39,15 @@ class Level:
         self.transitionAlpha = 0
         self.fadeOut = True
 
+        # Add win animation state
+        self.inWinAnimation = False
+        self.winAnimationStart = 0
+        self.winAnimationDuration = 10000
+        self.messageDuration = 5000
+        self.particles = []
+        self.portalSize = 0
+        self.done = False
+
         # Create fade surface for transitions
         self.fadeSurface = pygame.Surface((WIDTH, HEIGTH))
         self.fadeSurface.fill((0, 0, 0))
@@ -47,6 +61,8 @@ class Level:
         # Start ambient sound for initial map
         self.soundManager.startAmbient(self.currentMap)
 
+
+
     def run(self):
         # Check for map transitions first
         if not self.dialogSystem.active:
@@ -55,6 +71,12 @@ class Level:
         # Update transition if active
         if self.inTransition:
             self.updateTransition()
+
+        if self.inWinAnimation:
+            self.updateWinAnimation()
+            self.visibleSprites.customDraw(self.player)
+            self.drawWinAnimation()
+            return
 
         # Update and draw the game
         self.visibleSprites.customDraw(self.player)
@@ -79,10 +101,6 @@ class Level:
             self.targetMap = targetMap
             self.targetSpawn = spawnPosition
             self.soundManager.playSound('transition')
-
-            # Close any active dialog
-            if self.dialogSystem.active:
-                self.dialogSystem.closeDialog()
 
     def updateTransition(self):
         if not self.inTransition:
@@ -184,21 +202,29 @@ class Level:
     def createNpcs(self, mapName):
         if mapName == "crypt":
             luciusImage = pygame.image.load("../graphics/Characters/Sprite2.png"),
-            artistImage = pygame.image.load("../graphics/Characters/Sprite1.png"),
             marcusImage = pygame.image.load("../graphics/Characters/Sprite3.png"),
+            # dudeImage = pygame.image.load("../graphics/Characters/Sprite4.png"),
             # Add more NPC sprites as needed
 
             # Create NPCs closer to starting position for testing
-            npc1 = NPC((1100, 1000), [self.visibleSprites, self.npcs], "Artist", artistImage)
-            npc2 = NPC((2000, 1000), [self.visibleSprites, self.npcs], "Marcus", marcusImage)
-            npc3 = NPC((1500, 1000), [self.visibleSprites, self.npcs], "Lucius", luciusImage)
+            # npc1 = NPC((1100, 1000), [self.visibleSprites, self.npcs], "Camilla", None)
+            # npc2 = NPC((2000, 1000), [self.visibleSprites, self.npcs], "Marcus", marcusImage)
+            npc3 = NPC((1700, 300), [self.visibleSprites, self.npcs], "Lucius", luciusImage)
 
             npc4 = NPC((1245, 215), [self.visibleSprites, self.npcs], "outside", None)
+            npc9 = NPC((1220, 1500), [self.visibleSprites, self.npcs], "codex", None)
             print(f"Created NPCs. Total NPCs: {len(self.npcs)}") # Debug statement
         elif mapName == "town":
+            artistImage = pygame.image.load("../graphics/Characters/Sprite1.png"),
+
             # Add any town-specific NPCs here
             npc5 = NPC((2695, 580), [self.visibleSprites, self.npcs], "crypt", None)
-            npc6 = NPC((1462, 530), [self.visibleSprites, self.npcs], "dude", None)
+            npc6 = NPC((1462, 530), [self.visibleSprites, self.npcs], "Camilla", artistImage)
+            if self.done == False:
+                npc7 = NPC((2350, 550), [self.visibleSprites, self.npcs], "portal", None)
+            else:
+                npc8 = NPC((2350, 550), [self.visibleSprites, self.npcs], "portalwon", None)
+
             print(f"Created Town NPCs. Total NPCs: {len(self.npcs)}") # Debug statement
 
     def checkNpcInteraction(self):
@@ -229,7 +255,7 @@ class Level:
                 'floor': '../graphics/maps/CryptTest.png',
                 'walls': '../graphics/maps/CryptCollideables.png',
                 'props': '../graphics/maps/SolidProps.png',
-                'playerSpawn': (800, 1330),
+                'playerSpawn': (2000, 600),
                 'connections': {
                     'town': {
                         'zone': pygame.Rect(0, 0, 0, 0), # Zone that sends player to town, not using currently
@@ -260,6 +286,105 @@ class Level:
             }
         }
 
+    def startWinAnimation(self):
+        self.inWinAnimation = True
+        self.winAnimationStart = pygame.time.get_ticks()
+        self.winAnimationDuration = 3000  # 3 seconds
+        self.particles = []
+        self.portalSize = 0
+        self.maxPortalSize = 200
+
+        self.messageStartTime = pygame.time.get_ticks()
+
+
+        # Create initial particles
+        for _ in range(20):
+            self.particles.append({
+                'x': self.player.rect.centerx,
+                'y': self.player.rect.centery,
+                'speed': random.random() * 2 + 1,
+                'angle': random.random() * math.pi * 2,
+                'size': random.random() * 4 + 2,
+                'alpha': 255  # Add alpha for fade out
+            })
+
+        # Play portal sound
+        self.soundManager.playSound('portalOpen')
+
+    def updateWinAnimation(self):
+        if not self.inWinAnimation:
+            return
+
+        current_time = pygame.time.get_ticks()
+        elapsed = current_time - self.winAnimationStart
+        progress = elapsed / self.winAnimationDuration  # normalized time (0 to 1)
+
+        if progress == 1:
+            self.done = True
+            npc7 = None
+            npc8 = NPC((2350, 550), [self.visibleSprites, self.npcs], "portalwon", None)
+
+        # Check if animation should end
+        if elapsed >= self.winAnimationDuration:
+            self.inWinAnimation = False
+            print("Victory Dialog triggered")  # Debug line
+            # self.dialog.startVictoryDialog()
+            return
+
+        # Update portal size with easing
+        self.portalSize = min(self.maxPortalSize,
+                              self.maxPortalSize * self.easeOutQuad(progress))
+
+        # Update particles with fade out
+        for particle in self.particles:
+            # Update position
+            particle['x'] += math.cos(particle['angle']) * particle['speed']
+            particle['y'] += math.sin(particle['angle']) * particle['speed']
+            particle['angle'] += 0.02
+
+            # Fade out particles
+            particle['alpha'] = max(0, 255 * (1 - progress))
+
+    def drawWinAnimation(self):
+        if not self.inWinAnimation:
+            return
+
+        # Draw portal with alpha
+        portal_surface = pygame.Surface((self.portalSize * 2, self.portalSize * 2), pygame.SRCALPHA)
+        portal_alpha = max(0, 255 * (1 - (self.portalSize / self.maxPortalSize)))
+        pygame.draw.circle(portal_surface, (135, 206, 235, portal_alpha),
+                           (self.portalSize, self.portalSize), self.portalSize)
+
+        # Draw particles with fade
+        for particle in self.particles:
+            color = (135, 206, 235, particle['alpha'])
+            particle_surface = pygame.Surface((int(particle['size'] * 2),
+                                               int(particle['size'] * 2)),
+                                              pygame.SRCALPHA)
+            pygame.draw.circle(particle_surface, color,
+                               (int(particle['size']), int(particle['size'])),
+                               int(particle['size']))
+
+            # Calculate screen position
+            screen_x = int(particle['x'] - self.visibleSprites.offset.x - particle['size'])
+            screen_y = int(particle['y'] - self.visibleSprites.offset.y - particle['size'])
+            self.displaySurface.blit(particle_surface, (screen_x, screen_y))
+
+        # Draw portal at player position
+        portal_pos = (self.player.rect.centerx - self.portalSize - self.visibleSprites.offset.x,
+                      self.player.rect.centery - self.portalSize - self.visibleSprites.offset.y)
+        self.displaySurface.blit(portal_surface, portal_pos)
+
+        # Display "You have won" message
+        if pygame.time.get_ticks() - self.messageStartTime <= self.messageDuration:
+            font = pygame.font.SysFont("Arial", 48)
+            text = font.render("You have won!", True, (255, 255, 255))  # White text
+            text_rect = text.get_rect(center=(self.displaySurface.get_width() // 2, 50))  # Centered at the top
+            self.displaySurface.blit(text, text_rect)
+
+    def easeOutQuad(self, t):
+        # Quadratic easing function for smoother animation
+        return t * (2 - t)
 
 class YSortCameraGroup(pygame.sprite.Group):
     def __init__(self):
@@ -367,8 +492,7 @@ class YSortCameraGroup(pygame.sprite.Group):
         if self.currentMap == "town":
             if player.rect.centery <= self.roofRect.centery:
                 self.displaySurface.blit(self.roofSurf, floorOffsetPos)
+
         #elif self.currentMap == "crypt":
             #if player.rect.centery <= self.ballisterRect.centery:
                 #self.displaySurface.blit(self.ballisterSurf, ballisterOffsetPos)
-
-

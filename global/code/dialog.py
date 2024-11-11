@@ -162,6 +162,15 @@ class Dialog:
                             if self.levelRef:
                                 self.levelRef.startTransition('crypt', (1214, 168))
                             return None
+                        elif action == "portal_animation":
+                            print("Starting portal animation")
+                            self.closeDialog()  # Close the current dialog
+                            self.active = False  # Ensure dialog is completely inactive during animation
+                            if self.levelRef:
+                                self.levelRef.startWinAnimation()
+                                print("Win animation started")
+                            return None
+
 
                         # Handle regular dialog
                         if responseText is None:
@@ -173,6 +182,20 @@ class Dialog:
                     self.closeDialog()
         return None
 
+
+'''
+    def startVictoryDialog(self):
+        print("Second test")
+        # Set up the victory dialog
+        self.fullResponse = "You have won, congratulations!"  # Victory message
+        self.currentOptions = ["Continue"]  # Option(s) for the player to continue
+        self.selectedOption = 0
+        self.displayedChars = 0  # Reset the typewriter display count
+        self.isTyping = True
+        self.showOptions = False  # Start without showing options until typing finishes
+        self.lastCharTime = pygame.time.get_ticks()  # Initialize timing for typewriter effect
+        self.active = True  # Activate the dialog box
+'''
 
 class NPC(pygame.sprite.Sprite):
     def __init__(self, pos, groups, name, spriteImage):
@@ -276,186 +299,171 @@ class NPC(pygame.sprite.Sprite):
     # To add a new npc go to level and in create Npcs just copy one of the ones there change pos and name
 
     def getNpcDialogs(self):
-        if self.name == "Lucius":
+        if self.name == 'Lucius':
             return {
-                "greeting": {
-                    "options": [
-                        "I'm interested in your historical research",
-                        "I've heard you have an impressive collection",
-                        "Goodbye"
+                'greeting': {
+                    'options': [
+                        'I need your help!',
+                        'Have you heard of the codex?',
+                        'Goodbye!'
                     ],
-                    "responses": {
+                    'responses': {
                         0: {
-                            "text": "Ah, a fellow scholar? It's rare to find others who appreciate the value of ancient knowledge.",
-                            "next": "research"
+                            'text': 'How can I help you?',
+                            'next': "help"
                         },
                         1: {
-                            "text": "Indeed, I've spent decades gathering texts and artifacts. Each piece tells its own story.",
-                            "next": "collection"
+                            'text': 'I know very little about the codex.',
+                            'next': 'codex'
                         },
                         2: {
-                            "text": "Farewell, seeker of knowledge.",
-                            "next": None
+                            'text': 'Safe travels!',
+                            'next': None
                         }
                     }
                 },
-                "research": {
-                    "options": [
-                        "Tell me about your current studies",
-                        "I could help organize your research",
-                        "Let's discuss something else"
+                'help': {
+                    'options': [
+                        'I need to know the location of the codex.',
+                        'How much do you know about the codex?'
                     ],
-                    "responses": {
+                    'responses': {
                         0: {
-                            "text": "My current focus lies in ancient resistance movements. The strategies they employed were... fascinating.",
-                            "next": "strategies"
+                            'text': 'The location of the codex is hidden to me as well.',
+                            'next': 'Worker'
                         },
                         1: {
-                            "text": "Hmm... an intriguing offer. But I must be cautious with who accesses my more... sensitive materials.",
-                            "next": "trust"
-                        },
-                        2: {
-                            "text": "Very well. What would you like to discuss?",
-                            "next": "greeting"
+                            'text': 'Only that it is hidden away.',
+                            'next': 'Worker'
                         }
                     }
                 },
-                "collection": {
-                    "options": [
-                        "Any particularly rare pieces?",
-                        "How do you protect your collection?",
-                        "Return to previous topics"
+                'codex': {
+                    'options': [
+                        'Do you know where it was hidden?'
                     ],
-                    "responses": {
+                    'responses': {
                         0: {
-                            "text": "There are some... unique texts. But I must be selective about what I share.",
-                            "next": "trust"
-                        },
-                        1: {
-                            "text": "In these times, one can't be too careful. The Empire has... particular interests in certain knowledge.",
-                            "next": "empire"
-                        },
-                        2: {
-                            "text": "What else would you like to know?",
-                            "next": "greeting"
+                            'text': 'The location is unknown to me.',
+                            'next': 'Worker'
                         }
                     }
                 },
-                "trust": {
-                    "options": [
-                        "I understand your caution",
-                        "I could share some of my own research",
-                        "Perhaps another time"
+                'Worker': {
+                    'options': [
+                        'Do you have any clue to the location of the codex?',
+                        'Do you know anyone that does know the location?'
                     ],
-                    "responses": {
+                    'responses': {
                         0: {
-                            "text": "Your patience is... refreshing. Perhaps in time, we could collaborate more closely.",
-                            "next": "research"
+                            'text': "There's is only one person I know that might be able to help you. Her name is Camilla and she runs the shops in town.",
+                            'next': "Final"
                         },
                         1: {
-                            "text": "Intriguing. What areas of study have captured your interest?",
-                            "next": "strategies"
-                        },
-                        2: {
-                            "text": "Yes, trust must be earned slowly in these dangerous times.",
-                            "next": None
+                            'text': "Her name is Camilla. She runs a shop in town. She may be able to help you.",
+                            'next': "Final"
                         }
                     }
                 },
-                "strategies": {
-                    "options": [
-                        "Tell me about resistance tactics",
-                        "What makes these strategies special?",
-                        "Let's return to safer topics"
+                "Final": {
+                    'options': [
+                        "Thank You! "
                     ],
                     "responses": {
                         0: {
-                            "text": "The ancients had... unique ways of opposing tyranny. Some texts speak of methods lost to time.",
-                            "next": "empire"
-                        },
-                        1: {
-                            "text": "Their brilliance lies in subtlety. Not mere force, but wisdom in knowing when and how to act.",
-                            "next": "collection"
-                        },
-                        2: {
-                            "text": "Perhaps that would be wise. The walls have ears, after all.",
-                            "next": "greeting"
-                        }
-                    }
-                },
-                "empire": {
-                    "options": [
-                        "You seem concerned about the Empire",
-                        "These texts must be protected",
-                        "I should go"
-                    ],
-                    "responses": {
-                        0: {
-                            "text": "One must be... diplomatic in expressing such concerns. But yes, their interest in ancient knowledge troubles me.",
-                            "next": "strategies"
-                        },
-                        1: {
-                            "text": "Indeed. Knowledge is power, and some powers are too dangerous in the wrong hands.",
-                            "next": "trust"
-                        },
-                        2: {
-                            "text": "Yes... perhaps you should. But return if you wish to discuss more... academic matters.",
-                            "next": None
+                            'text': "There's is only one person I know that might be able to help you. Her name is Camilla and she runs the shops in town.",
+                            'next': None
                         }
                     }
                 }
             }
-
-        elif self.name == "Marcus":
+        elif self.name == 'Camilla':
             return {
-                "greeting": {
-                    "options": [
-                        "Lucius suggested I speak with you",
-                        "I hear you're knowledgeable about local politics",
-                        "Goodbye"
+                'greeting': {
+                    'options': [
+                        'Hello!',
+                        'Are you Camilla?',
+                        'Goodbye!'
                     ],
-                    "responses": {
+                    'responses': {
                         0: {
-                            "text": "Did he now? Lucius rarely sends visitors my way. You must have impressed him.",
-                            "next": "lucius"
+                            'text': 'Hello traveler, would you like to buy something?',
+                            'next': 'introduction'
                         },
                         1: {
-                            "text": "The currents of power in Rome run deep. One must be careful in discussing such matters.",
-                            "next": "politics"
+                            'text': 'That is I. How can I help you?',
+                            'next': 'information'
                         },
                         2: {
-                            "text": "Safe travels, friend.",
-                            "next": None
+                            'text': 'Safe Travels!',
+                            'next': None
                         }
                     }
-                }
-                # Add more dialog options for Marcus...
-            }
-
-        elif self.name == "Artist":
-            return {
-                "greeting": {
-                    "options": [
-                        "I admire your work",
-                        "Do you know Lucius the historian?",
-                        "Farewell"
+                },
+                'introduction': {
+                    'options': [
+                        'No, I actually have a question for you.',
+                        'No, are you Camilla?'
                     ],
-                    "responses": {
+                    'responses': {
                         0: {
-                            "text": "You have an eye for art? Not many appreciate the deeper meanings in my work.",
-                            "next": "art"
+                            'text': 'For me? How can I help you?',
+                            'next': 'location'
                         },
                         1: {
-                            "text": "Ah, the reclusive scholar? Yes, he's commissioned several pieces from me.",
-                            "next": "lucius"
-                        },
-                        2: {
-                            "text": "May the muses guide your path.",
-                            "next": None
+                            'text': 'That is I. How can I help you?',
+                            'next': 'location'
                         }
                     }
-                }
-                # Add more dialog options for Artist...
+                },
+                'location': {
+                    'options': [
+                        'Do you know the location of the codex?',
+                        'Can you help me find the codex?'
+                    ],
+                    'responses': {
+                        0: {
+                            'text': 'I cannot give you the location of the codex but I can give you a clue of where you can find it.',
+                            'next': 'clue'
+                        },
+                        1: {
+                            'text': 'I cannot give you the location of the codex but I can give you a clue of where you can find it.',
+                            'next': 'clue'
+                        }
+                    }
+                },
+                'clue': {
+                    'options': [
+                        'A clue would be very helpful.',
+                        'Please anything will help!'
+                    ],
+                    'responses': {
+                        0: {
+                            'text': 'The codex is contained where ancient stories are kept.',
+                            'next': 'thank'
+                        },
+                        1: {
+                            'text': 'The codex is contained where ancient stories are kept.',
+                            'next': 'thank'
+                        }
+                    }
+                },
+                'thank': {
+                    'options': [
+                        'Thank you for your help!'
+                        'That was very helpful! Thank you!'
+                    ],
+                    'responses': {
+                        0: {
+                            'text': 'Your welcome! Safe Travels!',
+                            'next': None
+                        },
+                        1: {
+                            'text': 'Your welcome! Safe Travels!',
+                            'next': None
+                        },
+                    },
+                },
             }
         elif self.name == "outside":
             return {
@@ -483,17 +491,99 @@ class NPC(pygame.sprite.Sprite):
                     }
                 }
             }
-        elif self.name == "dude":
+        elif self.name == "portal":
             return {
                 "greeting": {
-                    "options": ["Guy standing outside house in town"],
+                    "options": [
+                        "I'd like to open the portal!"
+                    ],
                     "responses": {
                         0: {
-                            "text": "",
-                            "next": None,
-                            "action": None
+                            "text": "What is the password?",
+                            "next": "guess"
+                        }
+                    }
+                },
+                "guess": {
+                    "options": [
+                        "The password is Effugium",
+                        "The password is Bestias",
+                        "The password is Pennarum "
+                    ],
+                    "responses": {
+                        0: {
+                            "text": "The portal has opened, you have won! ",
+                            "next": "win",
+                            "action": "portal_animation"
+                        },
+                        1: {
+                            "text": "That password is incorrect, begone.",
+                            "next": "wrong"
+                        },
+                        2: {
+                            "text": "That password is incorrect, begone.",
+                            "next": "wrong"
+                        }
+                    }
+                },
+                "wrong": {
+                    "options": [
+                        "The password is Effugium",
+                        "The password is Bestias",
+                        "The password is Pennarum "
+                    ],
+                    "responses": {
+                        0: {
+                            "text": "The portal has opened, you have won!",
+                            "next": "win",
+                            "action": "portal_animation"
+                        },
+                        1: {
+                            "text": "That password is incorrect, begone.",
+                            "next": "wrong"
+                        },
+                        2: {
+                            "text": "That password is incorrect, begone.",
+                            "next": "wrong"
+                        },
+                    },
+                },
+                "win": {
+                    "options": [
+                        "You have won, congratulations!",
+                    ],
+                    "responses": {
+                        0: {
+                            "text": "The portal has opened, you have won!",
+                            "next": None
                         }
                     }
                 }
             }
+        elif self.name == "codex":
+            return {
+                "greeting": {
+                    "options": [
+                        "Is this the codex? "
+                    ],
+                    "responses": {
+                        0: {
+                            "text": "Codex of ancient knowledge",
+                            "next": "firstPage"
+                        }
+                    }
+                },
+                "firstPage": {
+                    "options": [
+                        "The only word I can make out is Effugium",
+                    ],
+                    "responses": {
+                        0: {
+                            "text": "The code to the portal is Effugium",
+                            "next": None,
+                        }
+                    }
+                }
+            }
+
         return {}  # Default empty dialog for unknown NPCs

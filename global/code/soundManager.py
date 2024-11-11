@@ -20,6 +20,13 @@ class SoundManager:
             # Ambient sound channels (these will be longer audio files)
             'ambientCrypt': pygame.mixer.Sound('../audio/ambient/cryptAmbient.wav'),
             'ambientTown': pygame.mixer.Sound('../audio/ambient/townAmbient.wav'),
+
+            #Portal
+            'portalOpen': pygame.mixer.Sound('../audio/sfx/portalOpen.wav'),
+
+            #Intro
+            'intro': pygame.mixer.Sound('../audio/sfx/Intro.wav')
+
         }
 
         # Set default volumes
