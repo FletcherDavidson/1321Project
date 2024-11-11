@@ -3,7 +3,6 @@ import math
 import random
 from constants import *
 from player import Player
-from helpful import *
 from random import choice
 from dialog import Dialog, NPC
 from soundManager import *
@@ -18,7 +17,7 @@ class Level:
         self.displaySurface = pygame.display.get_surface()
 
         # Sprite group setup
-        self.visibleSprites = YSortCameraGroup()
+        self.visibleSprites = cameraGroup()
         self.obstacleSprites = pygame.sprite.Group()
         self.npcs = pygame.sprite.Group()
 
@@ -94,7 +93,7 @@ class Level:
 
     def startTransition(self, targetMap, spawnPosition):
         if not self.inTransition:
-            print(f"Starting transition to {targetMap} with spawn position {spawnPosition}")
+            # print(f"Starting transition to {targetMap} with spawn position {spawnPosition}")
             self.inTransition = True
             self.transitionTimer = pygame.time.get_ticks()
             self.fadeOut = True
@@ -150,15 +149,6 @@ class Level:
 
         # Create player at spawn position
         self.player = Player(mapInfo['playerSpawn'],[self.visibleSprites],self.obstacleSprites, self.visibleSprites.wallMask, self)
-        '''
-        # Manually set the player's position
-        if mapName == 'town':
-            self.player.rect.topleft = (2000, 1000)  # Set spawn position here
-            self.player.hitbox.topleft = (2000, 1000)
-        elif mapName == 'crypt':
-            self.player.rect.topleft = (1000, 1000)  # Set spawn position here
-            self.player.hitbox.topleft = (1000, 1000)
-        '''
         # Create NPCs specific to this map
         self.createNpcs(mapName)
 
@@ -181,7 +171,7 @@ class Level:
 
     def transitionToMap(self, targetMap, spawnPosition):
         # Handle the transition to a new map.
-        print(f"Transitioning to {targetMap} with spawn position {spawnPosition}")
+        # print(f"Transitioning to {targetMap} with spawn position {spawnPosition}")
         # could add transition effects here
         self.loadMap(targetMap)
         self.player.rect.topleft = spawnPosition
@@ -192,17 +182,18 @@ class Level:
         if self.dialogSystem.active and self.dialogSystem.currentNpc:
             if not self.dialogSystem.currentNpc.canInteract(self.player, self.visibleSprites.offset):
                 self.dialogSystem.closeDialog()
-                print("Dialog closed: Player moved too far from NPC") # Debug info
+                # print("Dialog closed: Player moved too far from NPC") # Debug info
 
     def processDialogChoice(self, choice):
         # Handle dialog choices here
-        print(f"Processing dialog choice: {choice}")
+        # print(f"Processing dialog choice: {choice}")
         # Add dialog choice handling logic here
+        pass
 
     def createNpcs(self, mapName):
         if mapName == "crypt":
             luciusImage = pygame.image.load("../graphics/Characters/Sprite2.png"),
-            marcusImage = pygame.image.load("../graphics/Characters/Sprite3.png"),
+            # marcusImage = pygame.image.load("../graphics/Characters/Sprite3.png"),
             # dudeImage = pygame.image.load("../graphics/Characters/Sprite4.png"),
             # Add more NPC sprites as needed
 
@@ -230,6 +221,7 @@ class Level:
     def checkNpcInteraction(self):
         keys = pygame.key.get_pressed()
 
+        '''
         # Debug info
         debugY = 10
         debugTexts = [
@@ -242,6 +234,7 @@ class Level:
             debugSurf = self.debugFont.render(text, True, (255, 255, 0))
             self.displaySurface.blit(debugSurf, (10, debugY))
             debugY += 30
+        '''
 
         for npc in self.npcs:
             if npc.canInteract(self.player, self.visibleSprites.offset):
@@ -319,10 +312,6 @@ class Level:
         elapsed = current_time - self.winAnimationStart
         progress = elapsed / self.winAnimationDuration  # normalized time (0 to 1)
 
-        if progress == 1:
-            self.done = True
-            npc7 = None
-            npc8 = NPC((2350, 550), [self.visibleSprites, self.npcs], "portalwon", None)
 
         # Check if animation should end
         if elapsed >= self.winAnimationDuration:
@@ -386,7 +375,7 @@ class Level:
         # Quadratic easing function for smoother animation
         return t * (2 - t)
 
-class YSortCameraGroup(pygame.sprite.Group):
+class cameraGroup(pygame.sprite.Group):
     def __init__(self):
         # General set up
         super().__init__()

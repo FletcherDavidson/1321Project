@@ -24,7 +24,7 @@ class Game:
                 self.played_intro_sound = True
 
             if self.u >= 1100:  # Intro sound finished
-                self.level.player.speed = 12  # Resume normal movement speed
+                self.level.player.speed = 5  # Resume normal movement speed
             else:
                 self.u += 1
                 self.level.player.speed = 0  # Stop player movement while sound is playing
@@ -36,7 +36,7 @@ class Game:
 
                 keys = pygame.key.get_pressed()
                 if keys[pygame.K_ESCAPE] and keys[pygame.K_LSHIFT]:
-                    print(self.u)
+                    # print(self.u)
                     pygame.quit()
                     sys.exit()
                 # Only handle dialog input if dialog is active

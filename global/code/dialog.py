@@ -183,20 +183,6 @@ class Dialog:
         return None
 
 
-'''
-    def startVictoryDialog(self):
-        print("Second test")
-        # Set up the victory dialog
-        self.fullResponse = "You have won, congratulations!"  # Victory message
-        self.currentOptions = ["Continue"]  # Option(s) for the player to continue
-        self.selectedOption = 0
-        self.displayedChars = 0  # Reset the typewriter display count
-        self.isTyping = True
-        self.showOptions = False  # Start without showing options until typing finishes
-        self.lastCharTime = pygame.time.get_ticks()  # Initialize timing for typewriter effect
-        self.active = True  # Activate the dialog box
-'''
-
 class NPC(pygame.sprite.Sprite):
     def __init__(self, pos, groups, name, spriteImage):
         super().__init__(groups)
